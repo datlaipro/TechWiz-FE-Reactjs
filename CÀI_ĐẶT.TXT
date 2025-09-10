@@ -1,0 +1,53 @@
+CÀI ĐẶT
+ - npm install react-router-dom
+ - npm install @mui/material @emotion/react @emotion/styled
+ - npm install @mui/icons-material
+ - npm install @mui/x-data-grid
+ - npm install react-slick slick-carousel --save
+ // Sử dụng React Slick để tạo slider
+
+ - Cài đặt font chữ Nunito từ Google Fonts.
+  - Mở file index.html trong thư mục public của dự án React.
+  - Thêm thẻ <link> sau vào phần <head> để tải font Nunito:
+  - <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+    Cài đặt Font trong Global CSS
+    Cần thiết lập font chữ Nunito làm mặc định cho toàn bộ ứng dụng React.
+    src/index.css
+    body {  font-family: 'Nunito', sans-serif;}
+
+
+
+// DÙNG CÁCH NÀY HIỆU QUẢ HƠN TRONG VIỆC ĐIỀU CHỈNH THEME
+// TUY NHIÊN VẪN CẦN IMPORT LINK FONT GOOGLE TRONG INDEX.HTML NẾU KHÔNG SẼ VẪN BỊ GHI ĐÈ FONT ROBOTO
+    3. Kết hợp Font trong Material-UI Theme (Tùy chọn)
+Nếu bạn sử dụng Material-UI, bạn có thể tích hợp font chữ Nunito vào theme toàn cục.
+
+Cách thực hiện:
+Mở hoặc tạo file theme Material-UI (src/theme.js).
+Cấu hình font chữ trong typography của theme như sau:
+jsx
+Copy code
+import { createTheme } from '@mui/material/styles';
+
+const theme = createTheme({
+  typography: {
+    fontFamily: 'Nunito, Arial, sans-serif',
+  },
+});
+
+export default theme;
+Sau đó, bọc ứng dụng React của bạn với ThemeProvider:
+jsx
+Copy code
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import App from './App';
+import theme from './theme';
+
+ReactDOM.render(
+  <ThemeProvider theme={theme}>
+    <App />
+  </ThemeProvider>,
+  document.getElementById('root')
+);
