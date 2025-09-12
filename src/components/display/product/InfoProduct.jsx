@@ -1,206 +1,220 @@
-import React from 'react';
+import React from "react";
 import {
-  Container,
-  Box,
-  Tabs,
-  Tab,
-  Typography,
-  Button,
-  TextField,
-  Checkbox,
-  FormControlLabel,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Rating,
-  Paper,
-  IconButton,
-} from '@mui/material';
-import { Star as StarIcon } from '@mui/icons-material';
+  Container, Box, Grid, Typography, Button, Chip, List, ListItem, ListItemIcon,
+  ListItemText, Paper, Link as MuiLink
+} from "@mui/material";
+import EventIcon from "@mui/icons-material/Event";
+import AccessTimeRounded from "@mui/icons-material/AccessTimeRounded";
+import PlaceRounded from "@mui/icons-material/PlaceRounded";
+import QueueMusicRounded from "@mui/icons-material/QueueMusicRounded";
+import RuleRounded from "@mui/icons-material/RuleRounded";
+import HelpOutlineRounded from "@mui/icons-material/HelpOutlineRounded";
+import DirectionsRounded from "@mui/icons-material/DirectionsRounded";
+import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
 
-const InfoProduct = () => {
-  const [value, setValue] = React.useState(0);
+const ACCENT = "#F86D72";
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
+const InfoProduct = ({ event }) => {
+  // dữ liệu có thể truyền từ ProductDetail, nếu thiếu dùng fallback
+  const title = event?.title || "Your Event Title";
+  const dateText =
+    event?.eventDateText ||
+    (event?.startTime && event?.endTime ? `${event.startTime} – ${event.endTime}` : "TBA");
+  const venueName = event?.venueName || "Main Hall / Arena";
+  const venueAddress = event?.venueAddress || "123 Example St, City, Country";
+  const priceFrom = event?.priceFrom ?? event?.price ?? 150000;
+
+  const lineup = event?.lineup || [
+    { time: "18:30", act: "Mở cổng · Check-in" },
+    { time: "19:30", act: "Artist A" },
+    { time: "20:15", act: "Artist B" },
+    { time: "21:00", act: "Headliner" },
+    { time: "22:30", act: "Encore & Goodbye" },
+  ];
+
+  const rules = event?.rules || [
+    "Không mang đồ uống có cồn từ bên ngoài.",
+    "Hạn chế balo lớn; kiểm tra an ninh tại cổng.",
+    "Không dùng flycam/professional camera khi chưa có phép.",
+    "Giữ khoảng cách an toàn, tuân thủ hướng dẫn BTC.",
+  ];
+
+  const faqs = event?.faqs || [
+    { q: "Vé có hoàn/đổi được không?", a: "Không hoàn/đổi sau khi thanh toán, trừ trường hợp sự kiện hủy/hoãn." },
+    { q: "Trẻ em có vào cửa được không?", a: "Có, đi kèm người lớn; một số khu vực có giới hạn độ tuổi." },
+    { q: "Có bãi đỗ xe không?", a: "Có bãi đỗ thu phí theo giờ ngay trong khuôn viên/đối diện cổng." },
+  ];
+
+  const mapEmbedUrl = event?.mapEmbedUrl
+    ? event.mapEmbedUrl
+    : `https://www.google.com/maps?q=${encodeURIComponent(venueAddress)}&output=embed`;
+
+  const fmtVND = (n) =>
+    typeof n === "number" ? new Intl.NumberFormat("vi-VN").format(n) + " đ" : n;
+
+  const go = (id) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <Container>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs
-          variant='fullWidth'
-          value={value}
-          onChange={handleChange}
-          aria-label="product tabs"
-          centered
-          TabIndicatorProps={{ style: { backgroundColor: '#F86D72' } }}
-        >
-          <Tab
-            label={<Typography variant="h6" style={{ color: value === 0 ? '#F86D72' : 'inherit' }}>Description</Typography>}
+    <Container sx={{ mt: 4 }}>
+      {/* NAV mục lục kiểu sự kiện */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1,
+          flexWrap: "wrap",
+          justifyContent: { xs: "center", md: "flex-start" },
+          mb: 2,
+        }}
+      >
+        {[
+          ["overview", "Tổng quan"],
+          ["lineup", "Line-up & Schedule"],
+          ["venue", "Địa điểm & Bản đồ"],
+          ["rules", "Nội quy"],
+          ["faq", "FAQ"],
+        ].map(([id, label]) => (
+          <Chip
+            key={id}
+            label={label}
+            onClick={() => go(id)}
+            sx={{
+              px: 1.2,
+              "&:hover": { bgcolor: `${ACCENT}14` },
+              borderRadius: 999,
+            }}
+            clickable
           />
-          <Tab
-            label={<Typography variant="h6" style={{ color: value === 1 ? '#F86D72' : 'inherit' }}>Information</Typography>}
-          />
-          <Tab
-            label={<Typography variant="h6" style={{ color: value === 2 ? '#F86D72' : 'inherit' }}>Shipping & Return</Typography>}
-          />
-          <Tab
-            label={<Typography variant="h6" style={{ color: value === 3 ? '#F86D72' : 'inherit' }}>Reviews (02)</Typography>}
-          />
-        </Tabs>
+        ))}
       </Box>
-      <TabPanel value={value} index={0}>
-        {/* <Typography variant="h6">Product Description</Typography>
-        <br /> */}
-        <Typography variant="h6">
-        Steven Johnson is a true master of the history of ideas. In this book, he focuses on 
-        just six technologies and explores their ramifications, both good and bad. 
-        He has created a hummingbird symbol for the types of inventions that interest him: 
-        the co-evolution of flowers and insects – intruders from another order of creation. 
-        This book is a collection of completely unexpected “hummingbird inventions”. The six themes presented are: 
-        Glass, Refrigeration, Sound, Cleaning, Time, Light.
-        </Typography>
-        <List>
-          <ListItem>
-            <ListItemIcon>
-              <StarIcon />
-            </ListItemIcon>
-            {/* <ListItemText primary="The book's highlight is its engaging storytelling style." /> */}
-            <Typography variant="h6">The book's highlight is its engaging storytelling style.</Typography>
-          </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <StarIcon />
-            </ListItemIcon>
-            {/* <ListItemText primary="which ties together historical pieces in a vivid and easy-to-understand way." /> */}
-            <Typography variant="h6">Which ties together historical pieces in a vivid and easy-to-understand way.</Typography>
-          </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <StarIcon />
-            </ListItemIcon>
-            {/* <ListItemText primary="helping readers see that progress comes from connection and creativity." /> */}
-            <Typography variant="h6">Helping readers see that progress comes from connection and creativity.</Typography>
-          </ListItem>
-        </List>
-        <Typography variant="h6">
-        Not just describing technology, Johnson analyzes how small improvements 
-        in each invention led to major turning points in human history – such 
-        as the invention of the microscope that advanced medicine, the refrigeration 
-        system that changed the way food was preserved globally, 
-        or the highly accurate clock that supported maritime activities and world trade.
-        </Typography>
-      </TabPanel>
-      <TabPanel value={value} index={1}>
-        <Typography variant="h6">There are 6 outstanding inventions in the book</Typography>
-        <Typography variant="h6">
-        These are glass, refrigeration, sound, hygiene, time
-        These contents may sound abstract but in fact their applications have brought many innovations to life.
-        Overall, Steven Johnson shows that great innovations are not just due to individual geniuses, 
-        but are the result of an entire innovation ecosystem, where small ideas connect and create huge breakthroughs.
-        </Typography>
-      </TabPanel>
-      <TabPanel value={value} index={2}>
-        <Typography variant="h6">Shipping</Typography>
-        <Typography variant="h6">
-        We will support customers to place orders and deliver products to customers within 7 working days.
-        If orders are placed on holidays, we will also process them but it will be 1 day later than usual
-        </Typography>
-        <Typography variant="h6">
-        Products delivered to customers will fully meet delivery standards.
-        </Typography>
-        <Typography variant="h6">Returns Policy</Typography>
-        <Typography variant="h6">
-        All products received by customers but not intact will be refunded immediately
-Customers will be able to return the product within 7 days for any reason
-After 7 days, customers will be able to exchange the product with a 10% fee for unused products
-For used products, we will buy back at a value of 2% of the original value for charity
-        </Typography>
-      </TabPanel>
-      <TabPanel value={value} index={3}>
-        <ReviewBox />
-      </TabPanel>
+
+      <Grid container spacing={3} alignItems="flex-start">
+        {/* LEFT CONTENT */}
+        <Grid item xs={12} md={8}>
+          {/* OVERVIEW */}
+          <Section id="overview" title="Tổng quan">
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {title} – Đêm nhạc bùng nổ cảm xúc!
+            </Typography>
+            <Typography sx={{ lineHeight: 1.9, fontSize: 18, mb: 2 }}>
+              Sự kiện quy tụ nhiều nghệ sĩ nổi tiếng, âm thanh – ánh sáng tiêu chuẩn, hứa hẹn mang lại
+              trải nghiệm “cháy” hết mình. Cửa mở sớm để bạn check-in, săn ảnh và nhận quà mini-game
+              khu vực lobby.
+            </Typography>
+
+            <List dense sx={{ pl: 1 }}>
+              {[
+                "Sân khấu lớn, màn hình LED.",
+                "An ninh & y tế trực 24/7.",
+                "Quầy đồ ăn – nước uống trong khuôn viên.",
+              ].map((t, i) => (
+                <ListItem key={i} disableGutters>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <ChevronRightRounded />
+                  </ListItemIcon>
+                  <ListItemText primaryTypographyProps={{ fontSize: 18 }} primary={t} />
+                </ListItem>
+              ))}
+            </List>
+          </Section>
+
+          {/* LINE-UP */}
+          <Section id="lineup" title="Line-up & Schedule" icon={<QueueMusicRounded />}>
+            <List dense>
+              {lineup.map((it, idx) => (
+                <ListItem key={idx} sx={{ py: 1 }}>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <Chip label={it.time} size="small" />
+                  </ListItemIcon>
+                  <ListItemText primaryTypographyProps={{ fontSize: 18 }} primary={it.act} />
+                </ListItem>
+              ))}
+            </List>
+            <Typography sx={{ mt: 1.5, color: "text.secondary" }}>
+              *Lịch trình có thể thay đổi nhẹ vì lý do kỹ thuật / thời tiết.
+            </Typography>
+          </Section>
+
+          {/* VENUE & MAP */}
+          <Section id="venue" title="Địa điểm & Bản đồ" icon={<PlaceRounded />}>
+            <Typography variant="h6" sx={{ mb: 0.5 }}>
+              {venueName}
+            </Typography>
+            <Typography sx={{ mb: 2 }}>{venueAddress}</Typography>
+            <Box
+              component="iframe"
+              title="Venue map"
+              src={mapEmbedUrl}
+              loading="lazy"
+              sx={{ border: 0, width: "100%", height: 320, borderRadius: 2, mb: 1.5 }}
+            />
+            <MuiLink
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                venueAddress
+              )}`}
+              target="_blank"
+              rel="noopener"
+              underline="none"
+            >
+              <Button startIcon={<DirectionsRounded />} variant="outlined">
+                Chỉ đường bằng Google Maps
+              </Button>
+            </MuiLink>
+          </Section>
+
+          {/* RULES */}
+          <Section id="rules" title="Nội quy" icon={<RuleRounded />}>
+            <List dense>
+              {rules.map((r, i) => (
+                <ListItem key={i} disableGutters>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <ChevronRightRounded />
+                  </ListItemIcon>
+                  <ListItemText primary={r} primaryTypographyProps={{ fontSize: 16 }} />
+                </ListItem>
+              ))}
+            </List>
+          </Section>
+
+          {/* FAQ */}
+          <Section id="faq" title="FAQ" icon={<HelpOutlineRounded />}>
+            <List>
+              {faqs.map((f, i) => (
+                <ListItem key={i} alignItems="flex-start">
+                  <ListItemText
+                    primary={<Typography variant="h6">{f.q}</Typography>}
+                    secondary={<Typography sx={{ mt: 0.5 }}>{f.a}</Typography>}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Section>
+        </Grid>
+
+        {/* RIGHT SIDEBAR – event card sticky */}
+        
+      </Grid>
     </Container>
   );
 };
 
-const TabPanel = ({ children, value, index, ...other }) => (
-  <Box
-    role="tabpanel"
-    hidden={value !== index}
-    id={`tabpanel-${index}`}
-    aria-labelledby={`tab-${index}`}
-    {...other}
-  >
-    {value === index && (
-      <Box sx={{ p: 3 }}>
-        <Typography>{children}</Typography>
-      </Box>
-    )}
-  </Box>
-);
-
-const ReviewBox = () => ( // Box này sẽ hiển thị thông tin review, dữ liệu review, và form review
-  <Box>
-    <ReviewItem
-      imageSrc="/demo/images/review-image1.jpg"
-      author="Tom Johnson"
-      date="07/02/2025"
-      text="This book has opened my eyes to a lot of useful knowledge about human progress."
-    />
-    <ReviewItem
-      imageSrc="/demo/images/review-image2.jpg"
-      author="Jenny Willis"
-      date="06/03/2025"
-      text="I really admire the creativity and intelligence of scientists. They have made my life today better and easier."
-    />
-    <AddReview />
-  </Box>
-);
-
-const ReviewItem = ({ imageSrc, author, date, text }) => (
-  <Box display="flex" mb={3}>
-    <Paper>
-      <img src={imageSrc} alt="review" style={{ width: 100, height: 100, objectFit: 'cover' }} />
-    </Paper>
-    <Box ml={2}>
-      <Rating value={5} readOnly />
-      <Typography variant="subtitle1">{author}</Typography>
-      <Typography variant="body1" color="textSecondary">
-        {date}
+/* ---------- small building blocks ---------- */
+const Section = ({ id, title, icon, children }) => (
+  <Box id={id} sx={{ mb: 4 }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      {icon}
+      <Typography variant="h6" sx={{ color: ACCENT, fontWeight: 700 }}>
+        {title}
       </Typography>
-      <Typography variant="h6">{text}</Typography>
     </Box>
+    <Box sx={{ mt: 1.5 }}>{children}</Box>
   </Box>
 );
 
-const AddReview = () => (
-  <Box mt={3}>
-    <Typography variant="h6">Add a review</Typography>
-    <Typography variant="h6">Your email address will not be published. Required fields are marked *</Typography>
-    <Box component="form" mt={2}>
-      <Box display="flex" gap={2} mb={2}>
-        <TextField name="name" label="Write your name here *" fullWidth />
-        <TextField name="email" label="Write your email here *" fullWidth />
-      </Box>
-      <TextField
-        name="review"
-        label="Write your review here *"
-        multiline
-        rows={4}
-        fullWidth
-        margin="normal"
-      />
-      <FormControlLabel
-        control={<Checkbox required />}
-        label="Save my name, email, and website in this browser for the next time."
-      />
-      <Button type="submit" variant="contained" color="primary">
-        Submit
-      </Button>
-    </Box>
+const Row = ({ icon, text, bold }) => (
+  <Box sx={{ display: "flex", alignItems: "center", gap: 1.2, mb: 1 }}>
+    <Box sx={{ display: "grid", placeItems: "center" }}>{icon}</Box>
+    <Typography sx={{ fontWeight: bold ? 700 : 500 }}>{text}</Typography>
   </Box>
 );
 

@@ -27,7 +27,7 @@ import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import StarOutlineOutlinedIcon from '@mui/icons-material/StarOutlineOutlined';
 import AdminAppBar from './AdminAppBar';
 import Slide from '@mui/material/Slide';
-
+import QrKit from './QrKit';
 const drawerWidth = 240;
 
 function LayoutAdmin() {
@@ -82,9 +82,10 @@ function LayoutAdmin() {
   // Menu cho Drawer tạm thời (mobile, 3 cột)
   const mobileMenu = (
     <Grid container spacing={2} sx={{ p: 2, bgcolor: '#263238' }}>
-      {['Dashboard', 'Products', 'Ware House', 'Order', 'User', 'Supplier', 'Maketing', 'Review'].map((text, index) => {
+      {['Dashboard', 'Products', 'Ware House', 'Order', 'User', 'Supplier', 'Maketing', 'Review','QR'].map((text, index) => {
         const paths = [
           '/admin',
+          
           '/admin/product',
           '/admin/import-products',
           '/admin/order',
@@ -92,6 +93,7 @@ function LayoutAdmin() {
           '/admin/supplier',
           '/admin/discount',
           '/admin/review',
+          '/admin/qr-kit',
         ];
         const allIcons = [...icons, ...icons2];
         return (
@@ -136,8 +138,8 @@ function LayoutAdmin() {
   const desktopMenu = (
     <>
       <List>
-        {['Dashboard', 'Products', 'Ware House', 'Order', 'User'].map((text, index) => {
-          const paths = ['/admin', '/admin/product', '/admin/import-products', '/admin/order', '/admin/user'];
+        {['Dashboard', 'Products', 'Ware House', 'Order', 'User','QR'].map((text, index) => {
+          const paths = ['/admin', '/admin/product', '/admin/import-products', '/admin/order', '/admin/user','/admin/qr-kit'];
           return (
             <ListItem key={text} disablePadding>
               <Tooltip

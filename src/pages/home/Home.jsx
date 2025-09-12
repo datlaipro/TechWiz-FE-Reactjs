@@ -17,7 +17,7 @@ export default function Home() {
   return (
     <>
       <GalleryBook />
-      <CompanyServices />
+      {/* <CompanyServices /> */}
       <BestSellingItems />
       <LimitedOffer />
       <ProductSection />

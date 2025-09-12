@@ -15,7 +15,7 @@ const AuthNavigation = () => {
 
   // Hàm xử lý điều hướng dựa trên vai trò
   const handleRedirect = (role) => {
-    if (role === "ROLE_ADMIN") {
+    if (role === "ROLE_ADMIN"||role==="ROLE_ORGANIZER") {
       navigate("/admin");
     } else if (role === "ROLE_USER") {
       navigate(location.pathname); // Ở lại trang hiện tại

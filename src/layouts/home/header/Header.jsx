@@ -74,7 +74,7 @@ const Header = () => {
                 About
               </CustomButton>
               <CustomButton component={Link} to="/shop" uppercase>
-                Shop
+                All Event
               </CustomButton>
               <CustomButton component={Link} to="/blog" uppercase>
                 Blogs

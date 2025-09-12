@@ -15,10 +15,6 @@ import {
   LinearProgress,
 } from '@mui/material';
 import {
-  Inventory,
-  AttachMoney,
-  Category as CategoryIcon,
-  Language,
   FilterAlt,
   CheckCircle,
   Cancel,
@@ -29,144 +25,12 @@ import {
   PendingActions,
   WarningAmberRounded,
 } from '@mui/icons-material';
-import { Bar } from 'react-chartjs-2';
 import { DataGrid } from '@mui/x-data-grid';
-import { useTheme } from '@mui/material/styles';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
 
-// === Chart.js register ===
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+/* ========================= Component ========================= */
 
 function Dashboard() {
-  const theme = useTheme();
-
-  // ======== PRODUCTS (giữ nguyên phần bạn đã có) ========
-  const [products, setProducts] = useState([]);
-  const [prodError, setProdError] = useState('');
-  const [prodLoading, setProdLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('http://localhost:6868/api/product')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch products');
-        return res.json();
-      })
-      .then((data) => {
-        setProducts(data || []);
-        setProdLoading(false);
-      })
-      .catch((err) => {
-        setProdError('Không thể tải dữ liệu sản phẩm');
-        setProdLoading(false);
-        console.error('Product Error:', err);
-      });
-  }, []);
-
-  const getProdStats = () => {
-    const totalProducts = products.length;
-    const totalValue = products.reduce(
-      (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
-      0
-    );
-    const totalCategories = [...new Set(products.map((p) => p.category))].length;
-    const totalLanguages = [...new Set(products.map((p) => p.language))].length;
-    return { totalProducts, totalValue, totalCategories, totalLanguages };
-  };
-
-  const getProdBarData = () => {
-    const categories = [...new Set(products.map((p) => p.category || 'Khác'))];
-    const categoryCounts = categories.map(
-      (cat) => products.filter((p) => (p.category || 'Khác') === cat).length
-    );
-    const palette = [
-      theme.palette.primary.main,
-      theme.palette.success.main,
-      theme.palette.secondary.main,
-      theme.palette.warning.main,
-      theme.palette.info.main,
-    ];
-    return {
-      labels: categories,
-      datasets: [
-        {
-          label: 'Số lượng sản phẩm',
-          data: categoryCounts,
-          backgroundColor: categories.map((_, i) => palette[i % palette.length] + 'B3'),
-          borderColor: categories.map((_, i) => palette[i % palette.length]),
-          borderWidth: 1,
-          borderRadius: 8,
-          hoverBackgroundColor: categories.map((_, i) => palette[i % palette.length]),
-        },
-      ],
-    };
-  };
-
-  const prodBarOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          font: { size: 14, weight: 'bold' },
-          color: theme.palette.text.primary,
-          padding: 12,
-          boxWidth: 20,
-        },
-      },
-      tooltip: {
-        enabled: true,
-        backgroundColor: theme.palette.mode === 'dark' ? '#222' : 'rgba(0,0,0,0.85)',
-        titleFont: { size: 14, weight: 'bold' },
-        bodyFont: { size: 12, weight: '500' },
-        padding: 12,
-        cornerRadius: 8,
-        borderWidth: 1,
-        borderColor: theme.palette.divider,
-        callbacks: {
-          title: (items) => items[0]?.label ?? '',
-          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: theme.palette.text.secondary,
-          font: { size: 12, weight: '500' },
-          maxRotation: 45,
-          minRotation: 45,
-        },
-        grid: { display: false },
-      },
-      y: {
-        ticks: {
-          color: theme.palette.text.secondary,
-          font: { size: 12, weight: '500' },
-        },
-        grid: {
-          color: theme.palette.divider,
-          borderDash: [4, 4],
-          drawBorder: false,
-        },
-      },
-    },
-    animation: {
-      duration: 1200,
-      easing: 'easeOutQuart',
-      delay: (context) => context.dataIndex * 100,
-    },
-  };
-
-  // ======== EVENTS & NEWS (Giai đoạn 1) ========
+  /* ---------- EVENTS & NEWS (Giai đoạn 1) ---------- */
   const [events, setEvents] = useState([]);
   const [news, setNews] = useState([]);
   const [evLoading, setEvLoading] = useState(true);
@@ -184,7 +48,7 @@ function Dashboard() {
     const fetchAll = async () => {
       try {
         const [evRes, newsRes] = await Promise.allSettled([
-          fetch('http://localhost:6868/api/events'),
+          fetch('http://localhost:6868/api/events'),// hàng chờ duyệt và sự kiện
           fetch('http://localhost:6868/api/news'),
         ]);
 
@@ -199,12 +63,8 @@ function Dashboard() {
         }
 
         // Fallback demo nếu API chưa có
-        if (!Array.isArray(evData) || evData.length === 0) {
-          evData = demoEvents();
-        }
-        if (!Array.isArray(newsData) || newsData.length === 0) {
-          newsData = demoNews();
-        }
+        if (!Array.isArray(evData) || evData.length === 0) evData = demoEvents();
+        if (!Array.isArray(newsData) || newsData.length === 0) newsData = demoNews();
 
         setEvents(evData);
         setNews(newsData);
@@ -255,11 +115,8 @@ function Dashboard() {
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(ev);
     });
-    // sort date asc & event by time asc
     const entries = Array.from(map.entries()).sort(([a], [b]) => new Date(a) - new Date(b));
-    entries.forEach(([, list]) =>
-      list.sort((x, y) => parseISO(x.startDate) - parseISO(y.startDate))
-    );
+    entries.forEach(([, list]) => list.sort((x, y) => parseISO(x.startDate) - parseISO(y.startDate)));
     return entries;
   }, [filteredEvents]);
 
@@ -324,38 +181,25 @@ function Dashboard() {
     setQueueRows([...evRows, ...newsRows]);
   }, [events, news]);
 
-  const handleApprove = (id) => {
-    // Ở đây chỉ cập nhật UI (fake). Khi có API, call /approve và refetch.
-    setQueueRows((prev) => prev.filter((r) => r.id !== id));
-  };
-  const handleReject = (id) => {
-    setQueueRows((prev) => prev.filter((r) => r.id !== id));
-  };
+  const handleApprove = (id) => setQueueRows((prev) => prev.filter((r) => r.id !== id)); // fake
+  const handleReject = (id) => setQueueRows((prev) => prev.filter((r) => r.id !== id));   // fake
 
-  // ======== Loading & Error states ========
-  if (prodLoading || evLoading) {
+  /* ---------- Loading & Error ---------- */
+  if (evLoading) {
     return (
       <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, bgcolor: 'grey.50' }}>
         <Grid container spacing={2}>
           {[...Array(4)].map((_, i) => (
             <Grid item xs={12} sm={6} md={3} key={`sk-kpi-${i}`}>
-              <Skeleton variant="rectangular" height={100} sx={{ borderRadius: '12px' }} />
+              <Skeleton variant="rectangular" height={160} sx={{ borderRadius: '16px' }} />
             </Grid>
           ))}
         </Grid>
         <Grid container spacing={2} sx={{ mt: 2 }}>
-          <Grid item xs={12}>
-            <Skeleton variant="rectangular" height={560} sx={{ borderRadius: '12px' }} />
-          </Grid>
-        </Grid>
-        <Grid container spacing={2} sx={{ mt: 2 }}>
-          <Grid item xs={12}>
-            <Skeleton variant="rectangular" height={80} sx={{ borderRadius: '12px' }} />
-          </Grid>
-          <Grid item xs={12} md={7}>
+          <Grid item xs={12} >
             <Skeleton variant="rectangular" height={420} sx={{ borderRadius: '12px' }} />
           </Grid>
-          <Grid item xs={12} md={5}>
+          <Grid item xs={12} >
             <Skeleton variant="rectangular" height={420} sx={{ borderRadius: '12px' }} />
           </Grid>
         </Grid>
@@ -363,95 +207,45 @@ function Dashboard() {
     );
   }
 
-  if (prodError || evError) {
+  if (evError) {
     return (
       <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, bgcolor: 'grey.50' }}>
-        {prodError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {prodError}
-          </Alert>
-        )}
-        {evError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {evError}
-          </Alert>
-        )}
+        <Alert severity="error" sx={{ mb: 2 }}>{evError}</Alert>
       </Box>
     );
   }
 
-  // ======== RENDER ========
-  const { totalProducts, totalValue, totalCategories, totalLanguages } = getProdStats();
-  const prodBarData = getProdBarData();
-
+  /* ========================= Render ========================= */
   return (
     <Box sx={{ mt: 1, px: { xs: 1, sm: 2 }, bgcolor: 'grey.50' }}>
-      {/* KPI Hàng 1: Sản phẩm (giữ nguyên) */}
+      {/* TOP: KPI Sự kiện & Tin tức (to gấp đôi) */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <KpiCard
-          title="Tổng sản phẩm"
-          value={totalProducts}
-          icon={<Inventory sx={{ fontSize: 40 }} />}
-          gradient="linear-gradient(135deg, #2196f3 0%, #64b5f6 100%)"
-        />
-        <KpiCard
-          title="Tổng giá trị tồn kho"
-          value={`${totalValue.toLocaleString()} VNĐ`}
-          icon={<AttachMoney sx={{ fontSize: 40 }} />}
-          gradient="linear-gradient(135deg, #4caf50 0%, #81c784 100%)"
-        />
-        <KpiCard
-          title="Tổng số Category"
-          value={totalCategories}
-          icon={<CategoryIcon sx={{ fontSize: 40 }} />}
-          gradient="linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%)"
-        />
-        <KpiCard
-          title="Tổng ngôn ngữ"
-          value={totalLanguages}
-          icon={<Language sx={{ fontSize: 40 }} />}
-          gradient="linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)"
-        />
-      </Grid>
-
-      {/* Biểu đồ cột sản phẩm (full width) */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12}>
-          <Paper sx={paperCardSx}>
-            <Typography variant="h6" sx={cardTitleSx}>
-              Số lượng sản phẩm theo thể loại
-            </Typography>
-            <Box sx={{ height: { xs: 420, md: 560 } }}>
-              <Bar data={prodBarData} options={prodBarOptions} />
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* KPI Hàng 2: Sự kiện & Tin tức (Giai đoạn 1) */}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <KpiCard
+          large
           title="Sự kiện trong tháng"
           value={eventsThisMonth}
-          icon={<CalendarMonthRounded sx={{ fontSize: 40 }} />}
+          icon={<CalendarMonthRounded sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)"
         />
         <KpiCard
+          large
           title="Tin tức trong tháng"
           value={newsThisMonth}
-          icon={<Article sx={{ fontSize: 40 }} />}
+          icon={<Article sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #00897b 0%, #26a69a 100%)"
         />
         <KpiCard
+          large
           title="Chờ duyệt (Sự kiện/Tin)"
           value={`${pendingEvents}/${pendingNews}`}
-          icon={<PendingActions sx={{ fontSize: 40 }} />}
+          icon={<PendingActions sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #5e35b1 0%, #9575cd 100%)"
         />
         <KpiCard
+          large
           title="Cảnh báo trùng lịch"
           value={conflictCount}
-          icon={<WarningAmberRounded sx={{ fontSize: 40 }} />}
+          icon={<WarningAmberRounded sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #f57c00 0%, #ffb74d 100%)"
         />
       </Grid>
@@ -475,9 +269,7 @@ function Dashboard() {
             sx={{ minWidth: 180 }}
           >
             {deptOptions.map((opt) => (
-              <MenuItem key={opt} value={opt}>
-                {opt}
-              </MenuItem>
+              <MenuItem key={opt} value={opt}>{opt}</MenuItem>
             ))}
           </TextField>
           <TextField
@@ -489,9 +281,7 @@ function Dashboard() {
             sx={{ minWidth: 180 }}
           >
             {typeOptions.map((opt) => (
-              <MenuItem key={opt} value={opt}>
-                {opt}
-              </MenuItem>
+              <MenuItem key={opt} value={opt}>{opt}</MenuItem>
             ))}
           </TextField>
           <TextField
@@ -522,7 +312,7 @@ function Dashboard() {
       {/* Lưới: Calendar List (trái) + Approval Queue (phải) */}
       <Grid container spacing={2}>
         {/* Calendar List */}
-        <Grid item xs={12} md={7}>
+        <Grid item xs={12} >
           <Paper sx={paperCardSx}>
             <Typography variant="h6" sx={cardTitleSx}>
               Lịch sự kiện (theo ngày)
@@ -610,7 +400,7 @@ function Dashboard() {
         </Grid>
 
         {/* Approval Queue */}
-        <Grid item xs={12} md={5}>
+        <Grid item xs={12} >
           <Paper sx={paperCardSx}>
             <Typography variant="h6" sx={cardTitleSx}>
               Hàng chờ duyệt
@@ -694,28 +484,29 @@ const paperCardSx = {
 
 const cardTitleSx = { fontWeight: 'bold', color: 'text.primary', mb: 1.5 };
 
-function KpiCard({ title, value, icon, gradient }) {
+function KpiCard({ title, value, icon, gradient, large }) {
   return (
     <Grid item xs={12} sm={6} md={3}>
       <Paper
         sx={{
-          p: 2,
-          borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+          p: large ? 3 : 2,
+          borderRadius: '16px',
+          boxShadow: '0 6px 24px rgba(0, 0, 0, 0.12)',
           background: gradient,
           color: 'white',
           display: 'flex',
           alignItems: 'center',
+          minHeight: large ? 140 : 100,
           transition: 'all 0.3s ease',
-          '&:hover': { boxShadow: '0 8px 28px rgba(0, 0, 0, 0.15)', transform: 'translateY(-4px)' },
+          '&:hover': { boxShadow: '0 10px 32px rgba(0, 0, 0, 0.18)', transform: 'translateY(-4px)' },
         }}
       >
         <Box sx={{ mr: 2 }}>{icon}</Box>
         <Box>
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          <Typography variant={large ? 'body1' : 'body2'} sx={{ fontWeight: 600 }}>
             {title}
           </Typography>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          <Typography variant={large ? 'h4' : 'h5'} sx={{ fontWeight: 'bold' }}>
             {value}
           </Typography>
         </Box>
@@ -727,7 +518,7 @@ function KpiCard({ title, value, icon, gradient }) {
 /* ====================== Demo Data (fallback) ====================== */
 function demoEvents() {
   const today = new Date();
-  const iso = (d) => d.toISOString().slice(0, 19); // yyyy-mm-ddThh:mm:ss
+  const iso = (d) => d.toISOString().slice(0, 19);
   const d = (offsetDay, sh, sm, eh, em) => {
     const s = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offsetDay, sh, sm, 0);
     const e = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offsetDay, eh, em, 0);

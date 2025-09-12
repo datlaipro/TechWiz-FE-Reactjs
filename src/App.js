@@ -49,7 +49,8 @@ import EditReview from './admin/review/EditReview';
 import ImportProductList from './admin/import-product/ImportProductList';
 import CreateImportProduct from './admin/import-product/CreateImportProduct';
 import EditImportProduct from './admin/import-product/EditImportProduct';
-
+import MyAccount from "./layouts/home/header/MyAccount";
+import QrKit from "./admin/layout/QrKit";
 // Thành phần mới để chứa nội dung của App
 function AppContent() {
   const { snackbar, closeSnackbar } = useAuth();
@@ -59,9 +60,12 @@ function AppContent() {
       {/* <AuthNavigation /> */}
       <Routes>
         <Route path="/" element={<LayoutHome />}>
+        
           {/* Các route công khai */}
           <Route index element={<Home />} />
           <Route path="about" element={<About />} />
+          <Route path="my-account" element={<MyAccount />} />
+          
           <Route path="shop" element={<ShopPage />} />
           <Route path="blog" element={<BlogPage />} />
           <Route path="contact" element={<ContactPage />} />
@@ -98,8 +102,10 @@ function AppContent() {
         >
           <Route index element={<Dashboard />} />
           <Route path="product" element={<ProductList />} />
-          <Route path="addproduct" element={<AddProduct />} />
-          <Route path="editproduct/:id" element={<EditProduct />} />
+          <Route path="qr-kit" element={<QrKit />} />
+
+          <Route path="addevent" element={<AddProduct />} />
+          <Route path="editvent/:id" element={<EditProduct />} />
           <Route path="productview/:id" element={<ProductView />} />
           <Route path="order" element={<OrderList />} />
           <Route path="edit-order/:orderId" element={<EditOrder />} />

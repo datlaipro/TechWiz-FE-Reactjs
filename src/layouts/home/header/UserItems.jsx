@@ -1,14 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Menu, MenuItem, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import UserModal from "./UserModal";
 import WishlistDropdown from "./WishlistDropdown";
 import CartDropdown from "./CartDropdown";
+import { useNavigate } from "react-router-dom";
+
+const STORAGE_KEY = "authState_v1";
 
 const UserItems = () => {
+  const navigate = useNavigate();
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState({ username: "john_doe", password: "123456" });
+  const [user, setUser] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [initialTabIndex, setInitialTabIndex] = useState(0);
@@ -25,15 +30,51 @@ const UserItems = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUser(null);
+    localStorage.removeItem(STORAGE_KEY); // 👈 xóa cache khi logout
     handleMenuClose();
   };
 
+  
+useEffect(() => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+
+    const saved = JSON.parse(raw);
+    // coi như đã đăng nhập khi có token
+    const hasToken = !!saved?.token;
+    const name =
+      saved?.user?.fullName ||
+      saved?.user?.email ||
+      saved?.email ||
+      "User";
+
+    if (hasToken) {
+      setIsLoggedIn(true);
+      setUser(name);
+    }
+  } catch (e) {
+    console.warn("Cannot parse saved auth:", e);
+  }
+}, []);
+
+useEffect(() => {
+  const openLogin = () => setModalOpen(true);
+  window.addEventListener("OPEN_LOGIN_MODAL", openLogin);
+  return () => window.removeEventListener("OPEN_LOGIN_MODAL", openLogin);
+}, []);
+
   return (
-    <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2 }}>
-      {/* Search Icon */}
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "center",
+        gap: 2,
+      }}
+    >
       <SearchIcon style={{ cursor: "pointer" }} />
 
-      {/* User Menu */}
       <IconButton
         onClick={handleMenuOpen}
         aria-controls={Boolean(anchorEl) ? "user-menu" : undefined}
@@ -50,34 +91,26 @@ const UserItems = () => {
         onClose={handleMenuClose}
       >
         {isLoggedIn ? (
-          [
+          <>
             <MenuItem
-              key="hello"
               disabled
               sx={{ pointerEvents: "none", opacity: 1, fontWeight: "bold" }}
             >
-              Hello, {user?.username || "User"}!
-            </MenuItem>,
-            <MenuItem key="account" onClick={() => console.log("Navigate to My Account")}>
+              Hello, {user || user || "User"}!
+            </MenuItem>
+            <MenuItem onClick={() => navigate("/my-account")}>
               My Account
-            </MenuItem>,
-            <MenuItem key="logout" onClick={handleLogout}>
-              Logout
-            </MenuItem>,
-          ]
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+          </>
         ) : (
-          [
-            <MenuItem key="login" onClick={() => handleMenuItemClick(0)}>
-              Login
-            </MenuItem>,
-            <MenuItem key="register" onClick={() => handleMenuItemClick(1)}>
-              Register
-            </MenuItem>,
-          ]
+          <>
+            <MenuItem onClick={() => handleMenuItemClick(0)}>Login</MenuItem>
+            <MenuItem onClick={() => handleMenuItemClick(1)}>Register</MenuItem>
+          </>
         )}
       </Menu>
 
-      {/* User Modal */}
       <UserModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -86,7 +119,6 @@ const UserItems = () => {
         setUser={setUser}
       />
 
-      {/* Wishlist & Cart */}
       <WishlistDropdown />
       <CartDropdown />
     </Box>

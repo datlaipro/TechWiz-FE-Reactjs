@@ -14,45 +14,78 @@ import {
 import axios from "axios";
 import { useAuth } from "../../protected/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
- import WishlistDropdown from "./WishlistDropdown";
- import CartDropdown from "./CartDropdown";
+const STORAGE_KEY = "authState_v1"; // 👈 dùng chung toàn app
 
-
-const UserModal = () => {
-  const { showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuth();
+const UserModal = ({
+  initialTabIndex = 0,
+  open,
+  onClose,
+  setIsLoggedIn,
+  setUser,
+}) => {
+  const { handleLoginSuccess } = useAuth(); // ❗ chỉ dùng callback từ context
   const navigate = useNavigate();
   const location = useLocation();
-  const [tabIndex, setTabIndex] = useState(0);
+
+  const [tabIndex, setTabIndex] = useState(initialTabIndex);
   const [credentials, setCredentials] = useState({ email: "", password: "" });
-  const [registerData, setRegisterData] = useState({ fullName: "", email: "", password: "" });
+  const [registerData, setRegisterData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+  });
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Mỗi lần modal mở, đồng bộ tab & reset form
   useEffect(() => {
+    if (!open) return;
+    setTabIndex(initialTabIndex ?? 0);
+
     const savedRememberMe = localStorage.getItem("rememberMe") === "true";
     if (savedRememberMe) {
       setRememberMe(true);
       setCredentials({
         email: localStorage.getItem("email") || "",
-        password: "", // Không lấy password từ localStorage
+        password: "",
       });
     } else {
+      setRememberMe(false);
       setCredentials({ email: "", password: "" });
     }
-    // Reset registerData khi modal mở
+
     setRegisterData({ fullName: "", email: "", password: "" });
     setError("");
     setSuccess("");
-  }, [showLoginModal]);
+  }, [open, initialTabIndex]);
+
+  // Clear message khi đổi tab
+  const handleTabChange = (_e, newIndex) => {
+    setTabIndex(newIndex);
+    setError("");
+    setSuccess("");
+  };
 
   const handleRedirect = (role) => {
-    console.log("Redirecting with role:", role); // Debug
-    if (role === "ROLE_ADMIN") {
+    if (role === "ROLE_ADMIN" || role === "ROLE_ORGANIZER") {
       navigate("/admin");
     } else {
-      navigate(location.pathname);
+      // Ở user, thường chỉ cần đóng modal là đủ để UI cập nhật theo state đăng nhập
+      // Nếu muốn reload trang hiện tại: navigate(0)
+      // Ở đây mình chỉ đóng modal:
+      // no-op
+      setIsLoggedIn(true);
     }
+  };
+
+  const normErr = (e) => {
+    const msg =
+      e?.response?.data?.message ??
+      e?.response?.data ??
+      e?.message ??
+      "Unknown error";
+    return typeof msg === "string" ? msg : JSON.stringify(msg);
   };
 
   const handleLogin = async () => {
@@ -60,32 +93,48 @@ const UserModal = () => {
       setError("Vui lòng điền email và mật khẩu!");
       return;
     }
-
     try {
-      const response = await axios.post("http://localhost:6868/api/auth/login", {
-        email: credentials.email,
-        password: credentials.password,
-      });
-      console.log("Login response:", response.data);
-
-      const { token } = response.data;
-      if (token) {
-        handleLoginSuccess(token, handleRedirect);
-
-        if (rememberMe) {
-          localStorage.setItem("email", credentials.email);
-          localStorage.setItem("rememberMe", "true");
-        } else {
-          localStorage.removeItem("email");
-          localStorage.removeItem("rememberMe");
+      const { data } = await axios.post(
+        "http://localhost:6868/api/auth/login",
+        {
+          email: credentials.email,
+          password: credentials.password,
         }
-      } else {
+      );
+
+      const { token, roles, exp } = data || {};
+
+      if (!token) {
         setError("Không nhận được token từ server!");
+        return;
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      const errorMessage = error.response?.data?.message || error.response?.data || error.message;
-      setError("Email hoặc mật khẩu không đúng: " + errorMessage);
+
+      // Context sẽ lưu token và gọi lại handleRedirect(role)
+      await handleLoginSuccess(token, handleRedirect);
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          token,
+          user: { email: credentials.email, roles },
+          isLoggedIn: true,
+          exp,
+          savedAt: Date.now(),
+        })
+      );
+      if (rememberMe) {
+        localStorage.setItem("email", credentials.email);
+        localStorage.setItem("rememberMe", "true");
+        setIsLoggedIn?.(true);
+        setUser?.(credentials.email);
+      } else {
+        localStorage.removeItem("email");
+        localStorage.removeItem("rememberMe");
+      }
+
+      // Đóng modal do props điều khiển
+      onClose?.();
+    } catch (e) {
+      setError("Email hoặc mật khẩu không đúng: " + normErr(e));
     }
   };
 
@@ -104,53 +153,47 @@ const UserModal = () => {
       birthDay: null,
       gender: null,
       avatar: null,
-      // Không gửi roles, để backend gán mặc định ROLE_USER
     };
 
-    console.log("Sending register data:", userData); // Debug
-
     try {
-      const response = await axios.post("http://localhost:6868/api/user", userData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
+      await axios.post("http://localhost:6868/api/user", userData, {
+        headers: { "Content-Type": "application/json" },
       });
-      console.log("Register response:", response.data);
 
-      // Tự động đăng nhập sau khi đăng ký thành công
+      // Auto-login
       try {
-        const loginResponse = await axios.post("http://localhost:6868/api/auth/login", {
-          email: registerData.email,
-          password: registerData.password,
-        });
-        console.log("Auto-login response:", loginResponse.data);
-        const { token } = loginResponse.data;
-        if (token) {
-          handleLoginSuccess(token, handleRedirect);
-          setSuccess("Đăng ký thành công!");
-          setTimeout(() => setShowLoginModal(false), 2000); // Đóng modal sau 2 giây
-        } else {
-          setError("Đăng ký thành công nhưng không thể đăng nhập: Không nhận được token!");
+        const { data } = await axios.post(
+          "http://localhost:6868/api/auth/login",
+          {
+            email: registerData.email,
+            password: registerData.password,
+          }
+        );
+        const { token } = data || {};
+        if (!token) {
+          setError("Đăng ký thành công nhưng không nhận được token!");
+          return;
         }
-      } catch (loginError) {
-        console.error("Auto-login error:", loginError);
-        const loginErrorMessage = loginError.response?.data?.message || loginError.response?.data || loginError.message;
-        setError("Đăng ký thành công nhưng lỗi khi đăng nhập: " + loginErrorMessage);
+
+        await handleLoginSuccess(token, handleRedirect);
+        setSuccess("Đăng ký & đăng nhập thành công!");
+        onClose?.(); // đóng ngay sau khi thành công
+      } catch (le) {
+        setError("Đăng ký thành công nhưng lỗi khi đăng nhập: " + normErr(le));
       }
-    } catch (error) {
-      console.error("Register error:", error);
-      const errorMessage = error.response?.data?.message || error.response?.data || error.message;
-      setError("Lỗi khi đăng ký: " + errorMessage);
+    } catch (e) {
+      setError("Lỗi khi đăng ký: " + normErr(e));
     }
   };
 
   return (
-    <Dialog open={showLoginModal} onClose={() => setShowLoginModal(false)}>
+    <Dialog open={open} onClose={onClose}>
       <DialogContent>
-        <Tabs value={tabIndex} onChange={(e, newIndex) => setTabIndex(newIndex)} centered>
+        <Tabs value={tabIndex} onChange={handleTabChange} centered>
           <Tab label="Login" />
           <Tab label="Register" />
         </Tabs>
+
         {tabIndex === 0 && (
           <Box sx={{ p: 2 }}>
             <TextField
@@ -158,7 +201,9 @@ const UserModal = () => {
               label="Email"
               margin="normal"
               value={credentials.email}
-              onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
+              onChange={(e) =>
+                setCredentials({ ...credentials, email: e.target.value })
+              }
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               sx={{ mb: 2 }}
             />
@@ -168,15 +213,19 @@ const UserModal = () => {
               type="password"
               margin="normal"
               value={credentials.password}
-              onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+              onChange={(e) =>
+                setCredentials({ ...credentials, password: e.target.value })
+              }
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               sx={{ mb: 2 }}
             />
-            {error && (
+
+            {!!error && (
               <Typography color="error" mt={1}>
                 {error}
               </Typography>
             )}
+
             <FormControlLabel
               control={
                 <Checkbox
@@ -187,11 +236,18 @@ const UserModal = () => {
               label="Remember me"
               sx={{ mt: 1 }}
             />
-            <Button variant="contained" fullWidth onClick={handleLogin} sx={{ mt: 2 }}>
+
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleLogin}
+              sx={{ mt: 2 }}
+            >
               Login
             </Button>
           </Box>
         )}
+
         {tabIndex === 1 && (
           <Box sx={{ p: 2 }}>
             <TextField
@@ -199,7 +255,9 @@ const UserModal = () => {
               label="Họ và tên"
               margin="normal"
               value={registerData.fullName}
-              onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+              onChange={(e) =>
+                setRegisterData({ ...registerData, fullName: e.target.value })
+              }
               onKeyDown={(e) => e.key === "Enter" && handleRegister()}
               sx={{ mb: 2 }}
             />
@@ -208,7 +266,9 @@ const UserModal = () => {
               label="Email"
               margin="normal"
               value={registerData.email}
-              onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+              onChange={(e) =>
+                setRegisterData({ ...registerData, email: e.target.value })
+              }
               onKeyDown={(e) => e.key === "Enter" && handleRegister()}
               sx={{ mb: 2 }}
             />
@@ -218,22 +278,31 @@ const UserModal = () => {
               type="password"
               margin="normal"
               value={registerData.password}
-              onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+              onChange={(e) =>
+                setRegisterData({ ...registerData, password: e.target.value })
+              }
               onKeyDown={(e) => e.key === "Enter" && handleRegister()}
               sx={{ mb: 2 }}
             />
-            {error && (
+
+            {!!error && (
               <Typography color="error" mt={1}>
                 {error}
               </Typography>
             )}
-            {success && (
+            {!!success && (
               <Typography color="success.main" mt={1}>
                 {success}
               </Typography>
             )}
-            <Button variant="contained" fullWidth onClick={handleRegister} sx={{ mt: 2 }}>
-              Visit Now
+
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleRegister}
+              sx={{ mt: 2 }}
+            >
+              Register
             </Button>
           </Box>
         )}
@@ -243,4 +312,3 @@ const UserModal = () => {
 };
 
 export default UserModal;
-
