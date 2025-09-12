@@ -27,7 +27,7 @@ const ProductDetail = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`http://localhost:6868/api/product/${id}/detail`)
+    fetch(`http://localhost:6868/api/events/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Không tìm thấy sản phẩm");
         return res.json();
@@ -238,25 +238,7 @@ const ProductDetail = () => {
                 sx={{ height: 1, bgcolor: "rgba(255,255,255,.08)", my: 1 }}
               />
 
-              {/* Giá + NÚT HÀNH ĐỘNG (đặt cao, luôn thấy) */}
-              {/* <Typography sx={{ opacity: 0.85, fontSize: 13 }}>
-                Giá từ
-              </Typography>
-              <Stack direction="row" alignItems="baseline" spacing={1}>
-                <Typography
-                  sx={{ fontWeight: 900, color: "white", fontSize: 24 }}
-                >
-                  {fmtVND(price)}
-                </Typography>
-                {oldPrice && (
-                  <Typography
-                    component="del"
-                    sx={{ color: "rgba(255,255,255,.55)", fontSize: 14 }}
-                  >
-                    {fmtVND(oldPrice)}
-                  </Typography>
-                )}
-              </Stack> */}
+         
 
               <Stack direction="row" spacing={1.2} sx={{ mt: 1 }}>
                 <Button
@@ -275,24 +257,7 @@ const ProductDetail = () => {
                   Register
                 </Button>
 
-                {/* <Button
-                  variant="outlined"
-                  sx={{
-                    borderColor: "rgba(255,255,255,.7)",
-                    color: "white",
-                    fontWeight: 700,
-                    px: 2.2,
-                    py: 1.05,
-                    borderRadius: 1.5,
-                    textTransform: "none",
-                    "&:hover": {
-                      borderColor: "white",
-                      bgcolor: "rgba(255,255,255,.06)",
-                    },
-                  }}
-                >
-                  Register
-                </Button> */}
+               
               </Stack>
 
               {/* mô tả đặt sau nút, tránh che */}
@@ -347,3 +312,6 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
+
+
+

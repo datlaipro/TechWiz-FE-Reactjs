@@ -15,6 +15,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { styled } from "@mui/material/styles";
 import UserItems from "./UserItems";
 import { AuthContext } from "../../protected/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Logo = styled("img")({
   height: "50px",
@@ -49,6 +50,7 @@ const Header = () => {
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
   };
+const Navigate = useNavigate();
 
   return (
     <>
@@ -64,7 +66,7 @@ const Header = () => {
         }}
       >
         <Toolbar>
-          <Logo src="/demo/images/main-logo.png" alt="Logo" />
+          <Logo src="https://pub-3d10e52fdf5d49fba5f48198b8864aa8.r2.dev/post/TECHWIZ%20LOGO.png" alt="Logo" sx={{cursor:'pointer'}} onClick={()=>{Navigate('/')}}/>
           {!isMobile && (
             <Box sx={{ flexGrow: 1, textAlign: "center" }}>
               <CustomButton component={Link} to="/" uppercase>

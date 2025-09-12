@@ -156,7 +156,8 @@ const UserModal = ({
     };
 
     try {
-      await axios.post("http://localhost:6868/api/user", userData, {
+      await axios.post("http://localhost:6868/api/user/register", userData, {
+
         headers: { "Content-Type": "application/json" },
       });
 

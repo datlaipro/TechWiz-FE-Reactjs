@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
@@ -12,23 +12,23 @@ import {
   TextField,
   Button,
   Stack,
-} from '@mui/material';
+} from "@mui/material";
 
 const DEFAULT_DEPARTMENTS = [
-  'Phòng CTSV',
-  'Khoa CNTT',
-  'Khoa Kinh tế',
-  'Phòng Truyền thông',
-  'Trung tâm Thể thao',
+  "Phòng CTSV",
+  "Khoa CNTT",
+  "Khoa Kinh tế",
+  "Phòng Truyền thông",
+  "Trung tâm Thể thao",
 ];
 
 const DEFAULT_EVENT_TYPES = [
-  'Hội thảo',
-  'Workshop',
-  'Cuộc thi',
-  'Talk',
-  'Festival',
-  'Thể thao',
+  "Hội thảo",
+  "Workshop",
+  "Cuộc thi",
+  "Talk",
+  "Festival",
+  "Thể thao",
 ];
 
 const ProductFilter = ({
@@ -70,9 +70,9 @@ const ProductFilter = ({
     end.setDate(start.getDate() + 6);
 
     const toYMD = (d) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
         d.getDate()
-      ).padStart(2, '0')}`;
+      ).padStart(2, "0")}`;
 
     patch({ dateFrom: toYMD(start), dateTo: toYMD(end) });
   };
@@ -82,55 +82,49 @@ const ProductFilter = ({
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const toYMD = (d) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
         d.getDate()
-      ).padStart(2, '0')}`;
+      ).padStart(2, "0")}`;
     patch({ dateFrom: toYMD(start), dateTo: toYMD(end) });
   };
 
-  const handleClearDates = () => patch({ dateFrom: '', dateTo: '' });
+  const handleClearDates = () => patch({ dateFrom: "", dateTo: "" });
 
   return (
-    <Box sx={{ mb: '2rem' }}>
+    <Box sx={{ mb: "2rem" }}>
       {/* Hàng trên: tổng số & Sort */}
-      <Box
+      {/* <Box
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         sx={{ mb: 2 }}
       >
         <Typography>
-          Showing {productCount} {productCount === 1 ? 'result' : 'results'}
+          Showing {productCount} {productCount === 1 ? "result" : "results"}
         </Typography>
 
         <Select
-          value={filters.sort ?? ''}
+          value={filters.sort ?? ""}
           onChange={handleSortChange}
           displayEmpty
           sx={{ minWidth: 220 }}
         >
           <MenuItem value="">Default sorting</MenuItem>
-          {/* Giữ các sort cũ */}
           <MenuItem value="name-asc">Name (A - Z)</MenuItem>
           <MenuItem value="name-desc">Name (Z - A)</MenuItem>
           <MenuItem value="price-asc">Price (Low-High)</MenuItem>
           <MenuItem value="price-desc">Price (High-Low)</MenuItem>
           <MenuItem value="rating-highest">Rating (Highest)</MenuItem>
           <MenuItem value="rating-lowest">Rating (Lowest)</MenuItem>
-          {/* Bổ sung sort theo ngày cho sự kiện */}
-          <MenuItem value="date-asc">Date (Soonest → Latest)</MenuItem>
-          <MenuItem value="date-desc">Date (Latest → Soonest)</MenuItem>
         </Select>
-      </Box>
+      </Box> */}
 
-      {/* Hàng dưới: Phòng ban | Loại sự kiện | Khoảng ngày */}
       <Stack
-        direction={{ xs: 'column', md: 'row' }}
+        direction={{ xs: "column", md: "row" }}
         spacing={2}
-        alignItems={{ xs: 'stretch', md: 'center' }}
+        alignItems={{ xs: "stretch", md: "center" }}
       >
-        {/* Phòng ban (multi) */}
-        <FormControl size="small" sx={{ minWidth: 240 }}>
+        {/* <FormControl size="small" sx={{ minWidth: 240 }}>
           <InputLabel id="dept-label">Phòng ban</InputLabel>
           <Select
             multiple
@@ -139,7 +133,7 @@ const ProductFilter = ({
             onChange={handleDeptChange}
             input={<OutlinedInput label="Phòng ban" />}
             renderValue={(selected) =>
-              (selected ?? []).length ? selected.join(', ') : 'Tất cả'
+              (selected ?? []).length ? selected.join(", ") : "Tất cả"
             }
           >
             {departments.map((d) => (
@@ -151,9 +145,8 @@ const ProductFilter = ({
               </MenuItem>
             ))}
           </Select>
-        </FormControl>
-
-        {/* Loại sự kiện (multi) */}
+        </FormControl> */}
+{/* 
         <FormControl size="small" sx={{ minWidth: 220 }}>
           <InputLabel id="type-label">Loại sự kiện</InputLabel>
           <Select
@@ -163,7 +156,7 @@ const ProductFilter = ({
             onChange={handleTypeChange}
             input={<OutlinedInput label="Loại sự kiện" />}
             renderValue={(selected) =>
-              (selected ?? []).length ? selected.join(', ') : 'Tất cả'
+              (selected ?? []).length ? selected.join(", ") : "Tất cả"
             }
           >
             {eventTypes.map((t) => (
@@ -175,20 +168,20 @@ const ProductFilter = ({
               </MenuItem>
             ))}
           </Select>
-        </FormControl>
+        </FormControl> */}
 
         {/* Phạm vi ngày */}
-        <Stack
+        {/* <Stack
           direction="row"
           spacing={1}
           alignItems="center"
-          sx={{ flexWrap: 'wrap' }}
+          sx={{ flexWrap: "wrap" }}
         >
           <TextField
             label="Từ ngày"
             type="date"
             size="small"
-            value={filters.dateFrom ?? ''}
+            value={filters.dateFrom ?? ""}
             onChange={handleFromChange}
             InputLabelProps={{ shrink: true }}
           />
@@ -196,7 +189,7 @@ const ProductFilter = ({
             label="Đến ngày"
             type="date"
             size="small"
-            value={filters.dateTo ?? ''}
+            value={filters.dateTo ?? ""}
             onChange={handleToChange}
             InputLabelProps={{ shrink: true }}
           />
@@ -211,7 +204,7 @@ const ProductFilter = ({
               Xoá ngày
             </Button>
           </Stack>
-        </Stack>
+        </Stack> */}
       </Stack>
     </Box>
   );

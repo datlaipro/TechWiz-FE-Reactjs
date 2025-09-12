@@ -40,7 +40,7 @@ const ShopPage = () => {
       >
         <Grid container spacing={4}>
           <Grid item xs={12} md={2}>
-            <Sidebar onFilterChange={handleFilterChange} />
+            {/* <Sidebar onFilterChange={handleFilterChange} /> */}
           </Grid>
           <Grid item xs={12} md={10}>
             <ProductFilter filters={filters} onFilterChange={handleFilterChange} />

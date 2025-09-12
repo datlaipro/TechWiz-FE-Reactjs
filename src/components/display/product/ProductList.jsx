@@ -1,8 +1,41 @@
 import React, { useState, useEffect } from "react";
-import { Grid, Box, Typography, CircularProgress, Button } from "@mui/material";
+import {
+  Grid,
+  Box,
+  Typography,
+  CircularProgress,
+  Button,
+  Paper,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip,
+  Stack,
+} from "@mui/material";
+import CalendarMonthRounded from "@mui/icons-material/CalendarMonthRounded";
+import PlaceRounded from "@mui/icons-material/PlaceRounded";
+
 import ProductCard from "./ProductCard";
 import PaginationComponent from "../free/PaginationComponent";
 import { useNavigate } from "react-router-dom";
+
+/* ===== sort & string helpers (an toàn cho null/undefined) ===== */
+const str = (v) => (v ?? "").toString();
+const lower = (v) => str(v).toLowerCase();
+const viCompare = (a, b) =>
+  str(a).localeCompare(str(b), "vi", { sensitivity: "base" });
+const money = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+const ts = (d) => {
+  const t = d ? new Date(d).getTime() : NaN;
+  return Number.isFinite(t) ? t : 0;
+};
+
+/* ===== helpers ===== */
 function fmtRange(startDate, endDate) {
   try {
     const s = startDate ? new Date(startDate) : null;
@@ -29,31 +62,84 @@ function fmtRange(startDate, endDate) {
     return "";
   }
 }
-
 const isEvent = (item) => !!item?.startDate;
 
-// Mini card cho sự kiện (chỉ dùng Box/Typo để giữ nguyên imports)
-const EventMiniCard = ({ event }) => {
+function yyyymmdd(d) {
+  const pad = (n) => (n < 10 ? "0" + n : "" + n);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+function currentWeekRange() {
+  const now = new Date();
+  const day = now.getDay(); // 0 = CN
+  const diffToMon = (day + 6) % 7; // về thứ 2
+  const start = new Date(now);
+  start.setDate(now.getDate() - diffToMon);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { from: yyyymmdd(start), to: yyyymmdd(end) };
+}
+function currentMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return { from: yyyymmdd(start), to: yyyymmdd(end) };
+}
+function badgeParts(dt) {
+  if (!dt) return { d: "", m: "" };
+  const d = new Date(dt);
+  return {
+    d: d.getDate().toString().padStart(2, "0"),
+    m: d.toLocaleString("vi-VN", { month: "short" }).replace(".", ""),
+  };
+}
+
+/* ===== Event card (layout cho sự kiện trường) ===== */
+/* ===== Event card (layout cho sự kiện trường) ===== */
+const EventCard = ({ event }) => {
   const navigate = useNavigate();
+
   return (
-    <Box
+    <Paper
+      elevation={1}
       sx={{
         width: "100%",
-        maxWidth: 280,
-        border: "1px solid #eee",
         borderRadius: 2,
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        border: "1px solid #eee",
       }}
     >
-      {event?.image && (
+      {/* Ảnh 16:9 – đã bỏ ô ngày góc trái */}
+      <Box
+        sx={{ position: "relative", aspectRatio: "16 / 9", bgcolor: "#fafafa" }}
+      >
         <Box
           component="img"
-          src={event.image}
+          src={event?.image || "/demo/images/placeholder.png"}
           alt={event.title || event.name}
-          sx={{ width: "100%", height: 180, objectFit: "cover" }}
+          sx={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+          loading="lazy"
         />
-      )}
-      <Box sx={{ p: 1.5 }}>
+      </Box>
+
+      {/* Nội dung */}
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          flexGrow: 1,
+        }}
+      >
         <Typography
           variant="subtitle1"
           sx={{
@@ -69,154 +155,196 @@ const EventMiniCard = ({ event }) => {
           {event.title || event.name}
         </Typography>
 
-        {(event?.startDate || event?.endDate) && (
-          <Typography variant="body2" sx={{ mt: 0.5 }}>
-            {fmtRange(event.startDate, event.endDate)}
-          </Typography>
-        )}
+        <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+          {event?.department && <Chip size="small" label={event.department} />}
+          {event?.category && (
+            <Chip size="small" variant="outlined" label={event.category} />
+          )}
+        </Stack>
 
-        {event?.location && (
-          <Typography variant="body2" sx={{ mt: 0.5 }}>
-            {event.location}
-          </Typography>
+        {(event?.startDate || event?.endDate) && (
+          <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <CalendarMonthRounded fontSize="small" />
+              <Typography variant="body2">
+                {fmtRange(event.startDate, event.endDate)}
+              </Typography>
+            </Stack>
+            {event?.location && (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <PlaceRounded fontSize="small" />
+                <Typography variant="body2">{event.location}</Typography>
+              </Stack>
+            )}
+          </Stack>
         )}
 
         {event?.link && (
-          <Box sx={{ mt: 1 }}>
-            <Button
-              size="small"
-              variant="contained"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => navigate(event.link)}
-            >
-              Register
-            </Button>
-          </Box>
+          <Button
+            fullWidth
+            sx={{ mt: "auto" }}
+            variant="contained"
+            onClick={() => navigate(event.link)}
+          >
+            REGISTER
+          </Button>
         )}
       </Box>
-    </Box>
+    </Paper>
   );
 };
 
-const ProductList = ({ filters }) => {
+/* ===== main component ===== */
+const ProductList = ({ filters: initialFilters }) => {
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(0);
-  const [size] = useState(12); // Số sản phẩm mỗi trang
+  const [size] = useState(12);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // State lọc (giữ logic hiện có)
+  const [filters, setFilters] = useState(
+    initialFilters || {
+      searchQuery: "",
+      dateFrom: "",
+      dateTo: "",
+      sort: "",
+      category: "",
+      language: "",
+      priceRange: "",
+    }
+  );
+  useEffect(() => {
+    if (initialFilters) setFilters((f) => ({ ...f, ...initialFilters }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFilters]);
+
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost:6868/api/product")
+    fetch("http://localhost:6868/api/events")
       .then((res) => {
-        if (!res.ok) throw new Error("Không thể tải danh sách sản phẩm");
+        if (!res.ok) throw new Error("Không thể tải danh sách sự kiện");
         return res.json();
       })
       .then((data) => {
-        const mappedProducts = data.map((product) => ({
-          id: product.id,
-          name: product.name,
-          author: product.author,
-          image:
-            product.images?.[0]?.imagePath || "/demo/images/placeholder.png",
-          discount: product.discountPercentage
-            ? `${product.discountPercentage}% OFF`
+        const mapped = data.map((x) => ({
+          id: x.id,
+          // fallback name để tránh undefined khi tìm kiếm
+          name: x.name || x.title || "",
+          title: x.title || x.name || "",
+          author: x.author,
+          image: x.images?.[0]?.imagePath || "/demo/images/placeholder.png",
+          discount: x.discountPercentage
+            ? `${x.discountPercentage}% OFF`
             : null,
-          price: product.price,
-          salePrice: product.salePrice || null,
-          rating: 4, // Giả lập, chờ EntityRating
+          price: x.price,
+          salePrice: x.salePrice || null,
+          rating: 4,
           category:
-            typeof product.category === "string"
-              ? product.category
-              : product?.category?.name || product?.categoryName || "",
-          language: product.language,
-          description: product.description,
-
-          // Bổ sung field "event style" để hiển thị EventMiniCard khi có
-          startDate:
-            product.startDate || product.dateAdded || product.createdAt || null,
-          endDate: product.endDate || null,
-          location: product.location || product.department || "",
-          link: `/productdetail/${product.id}`,
+            typeof x.category === "string"
+              ? x.category
+              : x?.category?.name || x?.categoryName || "",
+          department: x.department || "",
+          language: x.language,
+          description: x.description || "",
+          startDate: x.startDate || x.dateAdded || x.createdAt || null,
+          endDate: x.endDate || null,
+          location: x.location || x.department || "",
+          link: `/productdetail/${x.eventId || x.id}`, // giữ đường dẫn cũ để bạn không bị 404
         }));
-        setProducts(mappedProducts);
+        setProducts(mapped);
         setLoading(false);
       })
       .catch((err) => {
-        setError("Lỗi khi tải sản phẩm");
+        console.error(err);
+        setError("Lỗi khi tải sự kiện");
         setLoading(false);
-        console.error("Error:", err);
       });
   }, []);
 
-  // Áp dụng bộ lọc (GIỮ NGUYÊN logic cũ)
-  const filteredProducts = products
-    .filter((product) => {
-      // Tìm kiếm
-      const search = (filters.searchQuery || "").toLowerCase();
-      const matchesSearch =
-        !search ||
-        product.name.toLowerCase().includes(search) ||
-        (product.description || "").toLowerCase().includes(search);
+  /* ==== LỌC ==== */
+  const filteredProducts = products.filter((p) => {
+    const q = lower(filters.searchQuery);
+    const matchesSearch =
+      !q || lower(p.name).includes(q) || lower(p.description).includes(q);
 
-      // Danh mục
-      const matchesCategory =
-        !filters.category || product.category === filters.category;
+    const matchesCategory =
+      !filters.category || p.category === filters.category;
+    const matchesLanguage =
+      !filters.language || p.language === filters.language;
 
-      // Ngôn ngữ
-      const matchesLanguage =
-        !filters.language || product.language === filters.language;
+    const price = p.salePrice ?? p.price;
+    let matchesPrice = true;
+    if (filters.priceRange) {
+      const [min, max] = filters.priceRange.split("-").map(Number);
+      const minVND = min * 25000;
+      const maxVND = max ? max * 25000 : Infinity;
+      matchesPrice = money(price) >= minVND && money(price) < maxVND;
+    }
 
-      // Giá (chuyển $ sang VNĐ: $1 ≈ 25000 VNĐ)
-      const price = product.salePrice || product.price;
-      let matchesPrice = true;
-      if (filters.priceRange) {
-        const [min, max] = filters.priceRange.split("-").map(Number);
-        const minVND = min * 25000;
-        const maxVND = max ? max * 25000 : Infinity;
-        matchesPrice = price >= minVND && price < maxVND;
+    // Lọc theo khoảng ngày (giao với [from, to])
+    const from = filters.dateFrom ? new Date(filters.dateFrom) : null;
+    const to = filters.dateTo ? new Date(filters.dateTo) : null;
+    let matchesDate = true;
+    if (from || to) {
+      const s = p.startDate ? new Date(p.startDate) : null;
+      const e = p.endDate ? new Date(p.endDate) : s;
+      if (s) {
+        const startOk = !to || s <= to;
+        const endOk = !from || (e || s) >= from;
+        matchesDate = startOk && endOk;
+      } else {
+        matchesDate = false;
       }
+    }
 
-      return (
-        matchesSearch && matchesCategory && matchesLanguage && matchesPrice
-      );
-    })
-    // Sắp xếp (GIỮ NGUYÊN switch cũ)
-    .sort((a, b) => {
-      switch (filters.sort) {
-        case "name-asc":
-          return a.name.localeCompare(b.name);
-        case "name-desc":
-          return b.name.localeCompare(a.name);
-        case "price-asc":
-          return (a.salePrice || a.price) - (b.salePrice || b.price);
-        case "price-desc":
-          return (b.salePrice || b.price) - (a.salePrice || a.price);
-        case "rating-highest":
-          return (b.rating || 0) - (a.rating || 0);
-        case "rating-lowest":
-          return (a.rating || 0) - (b.rating || 0);
-        default:
-          return 0;
-      }
-    });
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesLanguage &&
+      matchesPrice &&
+      matchesDate
+    );
+  });
 
-  // Đặt lại trang khi bộ lọc thay đổi
+  /* ==== SẮP XẾP (an toàn, không lỗi localeCompare) ==== */
+  const comparatorMap = {
+    "name-asc": (a, b) => viCompare(a.name, b.name),
+    "name-desc": (a, b) => viCompare(b.name, a.name),
+
+    "date-asc": (a, b) => ts(a.startDate) - ts(b.startDate),
+    "date-desc": (a, b) => ts(b.startDate) - ts(a.startDate),
+
+    "price-asc": (a, b) =>
+      money(a.salePrice ?? a.price) - money(b.salePrice ?? b.price),
+    "price-desc": (a, b) =>
+      money(b.salePrice ?? b.price) - money(a.salePrice ?? a.price),
+
+    "rating-highest": (a, b) =>
+      (Number(b.rating) || 0) - (Number(a.rating) || 0),
+    "rating-lowest": (a, b) =>
+      (Number(a.rating) || 0) - (Number(b.rating) || 0),
+  };
+  const sorter = comparatorMap[filters?.sort] ?? (() => 0);
+  const sortedProducts = [...filteredProducts].sort(sorter);
+
   useEffect(() => {
     setPage(0);
   }, [filters]);
 
-  const totalPages = Math.ceil(filteredProducts.length / size);
-  const displayedProducts = filteredProducts.slice(
+  const totalPages = Math.ceil(sortedProducts.length / size);
+  const displayedProducts = sortedProducts.slice(
     page * size,
     (page + 1) * size
   );
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
+  // Handlers cho filter bar
+  const handleChange = (key) => (e) =>
+    setFilters((f) => ({ ...f, [key]: e.target.value }));
+  const setRange = ({ from, to }) =>
+    setFilters((f) => ({ ...f, dateFrom: from, dateTo: to }));
 
+  /* ===== render ===== */
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
@@ -224,7 +352,6 @@ const ProductList = ({ filters }) => {
       </Box>
     );
   }
-
   if (error) {
     return (
       <Box sx={{ mt: 4, textAlign: "center" }}>
@@ -232,40 +359,128 @@ const ProductList = ({ filters }) => {
       </Box>
     );
   }
-
-  if (filteredProducts.length === 0) {
+  if (sortedProducts.length === 0) {
     return (
       <Box sx={{ mt: 4, textAlign: "center" }}>
-        <Typography>Không tìm thấy sản phẩm</Typography>
+        <Typography>Không tìm thấy sự kiện</Typography>
       </Box>
     );
   }
 
   return (
     <>
-      <Grid container spacing={2}>
-        {displayedProducts.map((product) => (
+      {/* Filter bar */}
+      <Paper
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: 2,
+          border: "1px solid #eee",
+          bgcolor: "#fff",
+        }}
+      >
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={5}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Tìm kiếm sự kiện…"
+              value={filters.searchQuery || ""}
+              onChange={handleChange("searchQuery")}
+            />
+          </Grid>
+
+          <Grid item xs={6} md={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Từ ngày"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={filters.dateFrom || ""}
+              onChange={handleChange("dateFrom")}
+            />
+          </Grid>
+          <Grid item xs={6} md={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Đến ngày"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={filters.dateTo || ""}
+              onChange={handleChange("dateTo")}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={2.5} sx={{ display: "flex", gap: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setRange(currentWeekRange())}
+            >
+              TUẦN NÀY
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setRange(currentMonthRange())}
+            >
+              THÁNG NÀY
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => setRange({ from: "", to: "" })}
+            >
+              XOÁ NGÀY
+            </Button>
+          </Grid>
+
+          <Grid item xs={12} md={1.5}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Sắp xếp</InputLabel>
+              <Select
+                label="Sắp xếp"
+                value={filters.sort || ""}
+                onChange={handleChange("sort")}
+              >
+                <MenuItem value="">Mặc định</MenuItem>
+                <MenuItem value="name-asc">Tên A → Z</MenuItem>
+                <MenuItem value="name-desc">Tên Z → A</MenuItem>
+                <MenuItem value="date-asc">Ngày sớm → muộn</MenuItem>
+                <MenuItem value="date-desc">Ngày muộn → sớm</MenuItem>
+                <MenuItem value="price-asc">Giá tăng dần</MenuItem>
+                <MenuItem value="price-desc">Giá giảm dần</MenuItem>
+                <MenuItem value="rating-highest">Đánh giá cao nhất</MenuItem>
+                <MenuItem value="rating-lowest">Đánh giá thấp nhất</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Lưới kết quả: card sự kiện */}
+      <Grid container spacing={3}>
+        {displayedProducts.map((p) => (
           <Grid
             item
             xs={12}
             sm={6}
             md={4}
             lg={3}
-            key={product.id}
-            sx={{ display: "flex", justifyContent: "center" }}
+            key={p.id}
+            sx={{ display: "flex" }}
           >
-            {isEvent(product) ? (
-              <EventMiniCard event={product} />
-            ) : (
-              <ProductCard product={product} />
-            )}
+            {isEvent(p) ? <EventCard event={p} /> : <ProductCard product={p} />}
           </Grid>
         ))}
       </Grid>
+
       <PaginationComponent
         page={page}
         totalPages={totalPages}
-        onPageChange={handlePageChange}
+        onPageChange={(newPage) => setPage(newPage)}
       />
     </>
   );

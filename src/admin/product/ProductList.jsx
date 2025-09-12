@@ -23,6 +23,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
+import readAuth from "../auth/getToken";
 
 // === BẬT/TẮT mock data ===
 const USE_MOCK = true;
@@ -110,6 +111,11 @@ const MOCK_EVENTS = [
 ];
 
 function ProductList() {
+  const { token, role, userId } = readAuth(); // lấy thêm role, userId
+  const authHeaders = {
+    Accept: "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -223,6 +229,10 @@ function ProductList() {
 
   const handleDelete = (id) => {
     if (window.confirm("Bạn có chắc muốn xóa sự kiện này?")) {
+      fetch(`http://localhost:6868/api/organizer/events/${id}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
       // Khi dùng mock: chỉ xóa trên state
       setEvents((prev) => prev.filter((ev) => (ev.id ?? ev.event_id) !== id));
     }

@@ -106,7 +106,7 @@ function AppContent() {
           <Route path="qr-kit" element={<QrKit />} />
 
           <Route path="addevent" element={<AddProduct />} />
-          <Route path="editvent/:id" element={<EditProduct />} />
+          <Route path="editevent/:id" element={<EditProduct />} />
           <Route path="eventsview/:id" element={<ProductView />} />
           <Route path="order" element={<OrderList />} />
           <Route path="edit-order/:orderId" element={<EditOrder />} />

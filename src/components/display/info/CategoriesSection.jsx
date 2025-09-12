@@ -1,100 +1,197 @@
 import React from "react";
-import { Box, Container, Typography, Card, CardMedia, Link } from "@mui/material";
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardActionArea,
+  Chip,
+  Stack,
+  Link as MUILink,
+} from "@mui/material";
 import Grid from "@mui/material/Grid2";
+import ScienceRounded from "@mui/icons-material/ScienceRounded";
+import TheatersRounded from "@mui/icons-material/TheatersRounded";
+import SportsSoccerRounded from "@mui/icons-material/SportsSoccerRounded";
+import SchoolRounded from "@mui/icons-material/SchoolRounded";
+import GroupsRounded from "@mui/icons-material/GroupsRounded";
+import CampaignRounded from "@mui/icons-material/CampaignRounded";
 
-const CategoriesSection = () => {
+const ICONS = {
+  technical: <ScienceRounded />,
+  cultural: <TheatersRounded />,
+  sports: <SportsSoccerRounded />,
+  academic: <SchoolRounded />,
+  clubs: <GroupsRounded />,
+  admissions: <CampaignRounded />,
+};
+
+export default function EventCategoriesSection() {
   const categories = [
-    { title: "Romance", image: "/demo/images/category1.jpg", link: "/shop" },
-    { title: "Language", image: "/demo/images/category2.jpg", link: "/shop" },
-    { title: "Literature", image: "/demo/images/category3.jpg", link: "/shop" },
+    {
+      key: "technical",
+      title: "Technical",
+      image: "/demo/images/cat-technical.jpg",
+      link: "/events?category=technical",
+    },
+    {
+      key: "cultural",
+      title: "Cultural & Arts",
+      image: "/demo/images/cat-cultural.jpg",
+      link: "/events?category=cultural",
+    },
+    {
+      key: "sports",
+      title: "Sports",
+      image: "/demo/images/cat-sports.jpg",
+      link: "/events?category=sports",
+    },
+    {
+      key: "academic",
+      title: "Academic & Seminar",
+      image: "/demo/images/cat-academic.jpg",
+      link: "/events?category=academic",
+    },
+    {
+      key: "clubs",
+      title: "Clubs & Societies",
+      image: "/demo/images/cat-clubs.jpg",
+      link: "/events?category=clubs",
+    },
+    {
+      key: "admissions",
+      title: "Admissions & Orientation",
+      image: "/demo/images/cat-admissions.jpg",
+      link: "/events?category=admissions",
+    },
+  ];
+
+  const quickFilters = [
+    { label: "This week", href: "/events?when=this-week" },
+    { label: "This month", href: "/events?when=this-month" },
+    { label: "Free entry", href: "/events?free=true" },
+    { label: "Online", href: "/events?mode=online" },
+    { label: "Nearby", href: "/events?near=me" },
   ];
 
   return (
-<Box id="categories" sx={{ py: 4, pt: 0, width: "100%" }}>
-  <Container
-    maxWidth="xl" // Đảm bảo Container dùng chung cho cả Box và Grid
-    sx={{
-      padding: "0 24px", // Padding cho toàn bộ nội dung
-    }}
-  >
-    {/* Section Title */}
-    <Box
-      mb={4}
-      sx={{
-        overflow: "hidden",
-        width: "100%", // Đảm bảo tiêu đề rộng bằng Grid
-      }}
-    >
-      <Typography
-        variant="h4"
-        component="h3"
+    <Box id="categories" sx={{ py: 4, width: "100%" }}>
+      <Container
+        maxWidth="xl"
         sx={{
-            fontSize: "39px",
-        //   fontWeight: "bold",
-        //   display: "flex",
-        //   alignItems: "center",
-        //   textAlign: "center", // Canh giữa tiêu đề
-        // ml: 15, // Canh lề trái
+          px: { xs: 2, md: 3 },
         }}
       >
-        Categories
-      </Typography>
-    </Box>
+        {/* Title + Quick filters */}
+        <Box
+          mb={3}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <Typography variant="h4" sx={{ fontSize: 32 }}>
+            Browse by Topic
+          </Typography>
 
-    {/* Category Cards */}
-    <Grid container spacing={8} sx={{ justifyContent: "center", alignItems: "center" }}>
-      {categories.map((category, index) => (
-        <Grid item xs={12} sm={6} md={4} key={index}>
-          <Card
-            sx={{
-              mb: 4,
-              border: "none",
-              borderRadius: 3,
-              position: "relative",
-              boxShadow: "none",
-            }}
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ overflowX: "auto", pb: 0.5 }}
           >
-            <Link href={category.link} underline="none">
-              <CardMedia
-                component="img"
-                src={category.image}
-                alt={category.title}
-                sx={{
-                  borderRadius: 3,
-                  width: "100%",
-                  height: "230px", // Chiều cao cố định
-                  objectFit: "cover", // Ảnh tự động thu nhỏ mà không bị cắt
-                  maxWidth: "450px", // Đảm bảo chiều rộng không vượt quá 450px
-                  margin: "0 auto", // Căn giữa hình ảnh
-                }}
+            {quickFilters.map((f, i) => (
+              <Chip
+                key={i}
+                component={MUILink}
+                clickable
+                href={f.href}
+                label={f.label}
+                variant="outlined"
+                sx={{ textDecoration: "none" }}
               />
-              <Typography
-                variant="h6"
-                component="div"
+            ))}
+          </Stack>
+        </Box>
+
+        {/* Category cards */}
+        <Grid container spacing={4} sx={{ alignItems: "stretch" }}>
+          {categories.map((c) => (
+            <Grid key={c.key} xs={12} sm={6} md={4}>
+              <Card
+                elevation={0}
                 sx={{
-                  position: "absolute", // Định vị tuyệt đối
-                  bottom: 0,
-                  bgcolor: "#F86D72",
-                  color: "white",
-                  m: 3, // Margin xung quanh chữ
-                  py: 1, // Padding theo chiều dọc
-                  px: 2, // Padding theo chiều ngang
-                  borderRadius: 2,
+                  height: "100%",
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  border: "1px solid",
+                  borderColor: "divider",
                 }}
               >
-                <Link href={category.link} color="inherit" underline="none">
-                  {category.title}
-                </Link>
-              </Typography>
-            </Link>
-          </Card>
+                <CardActionArea
+                  href={c.link}
+                  sx={{
+                    position: "relative",
+                    height: 240,
+                    "&:hover .overlay": { opacity: 1 },
+                    "&:hover img": { transform: "scale(1.04)" },
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={c.image}
+                    alt={c.title}
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      transition: "transform .35s ease",
+                      display: "block",
+                    }}
+                  />
+                  {/* gradient overlay */}
+                  <Box
+                    className="overlay"
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      background:
+                        "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%)",
+                      opacity: 0.85,
+                      transition: "opacity .3s ease",
+                    }}
+                  />
+                  {/* label */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      left: 16,
+                      bottom: 16,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <Chip
+                      icon={ICONS[c.key]}
+                      label={c.title}
+                      color="primary"
+                      sx={{
+                        color: "primary.contrastText",
+                        bgcolor: "primary.main",
+                        "& .MuiChip-icon": { color: "inherit" },
+                        fontWeight: 600,
+                      }}
+                    />
+                  </Box>
+                </CardActionArea>
+              </Card>
+            </Grid>
+          ))}
         </Grid>
-      ))}
-    </Grid>
-  </Container>
-</Box>
-
+      </Container>
+    </Box>
   );
-};
-
-export default CategoriesSection;
+}

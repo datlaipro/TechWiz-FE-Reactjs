@@ -11,6 +11,7 @@ import axios from "axios";
 /* ===== Utils ===== */
 const truncateText = (t, n) =>
   !t || t.length <= n ? t : t.substring(0, n) + "...";
+
 const shuffleArray = (arr) => {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -26,22 +27,30 @@ const GalleryBook = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchEvents = async () => {
       try {
-        const { data } = await axios.get("http://localhost:6868/api/product");
-        if (!Array.isArray(data))
-          throw new Error("API did not return an array");
+        const { data } = await axios.get("http://localhost:6868/api/events");
+        if (!Array.isArray(data)) throw new Error("API did not return an array");
 
         const mapped = data
-          .filter((p) => p?.id && typeof p.id === "number")
-          .map((p) => ({
-            id: p.id,
-            title: p.name || "Unknown Product",
-            description: p.salePrice
-              ? `Save ${p.discountPercentage || 0}%! Only ${p.salePrice} VNĐ`
-              : p.description || "Discover now!",
-            buttonText: "Shop Now",
-            image: p.images?.[0]?.imagePath || "/demo/images/placeholder.png",
+          // eventId có thể là số hoặc chuỗi; ép về Number để dùng làm key/link
+          .filter((e) => e?.eventId != null && Number.isFinite(Number(e.eventId)))
+          .map((e) => ({
+            id: Number(e.eventId), // dùng cho key và link
+            title: e.title || "Sự kiện",
+            description: e.description || "Khám phá chi tiết sự kiện.",
+            buttonText: "Xem chi tiết",
+            // BE chưa chắc có ảnh -> thử vài key phổ biến, cuối cùng dùng placeholder
+            image:
+              e.image ||
+              e.banner ||
+              e.imagePath ||
+              "/demo/images/placeholder.png",
+            // giữ thêm vài field nếu sau này muốn hiển thị
+            startDate: e.startDate || e.date || null,
+            endDate: e.endDate || null,
+            venue: e.venue || "",
+            status: e.status || "",
           }));
 
         setSlides(shuffleArray(mapped).slice(0, 5));
@@ -50,7 +59,7 @@ const GalleryBook = () => {
         setError("Failed to load slides. Please try again later.");
       }
     };
-    fetchProducts();
+    fetchEvents();
   }, []);
 
   const settings = {
@@ -88,16 +97,16 @@ const GalleryBook = () => {
               key={slide.id}
               sx={{
                 position: "relative",
-                height: { xs: 480, md: 800 }, // 👈 container giữ chiều cao slide
+                height: { xs: 480, md: 800 },
                 overflow: "hidden",
               }}
             >
-              {/* ẢNH NỀN FULL-BLEED: absolute phủ toàn slide */}
+              {/* ẢNH NỀN FULL-BLEED */}
               <Box
                 aria-hidden
                 sx={{
                   position: "absolute",
-                  inset: 0, // top/right/bottom/left: 0
+                  inset: 0,
                   left: "50%",
                   transform: "translateX(-50%)",
                   width: "100vw",
@@ -106,7 +115,7 @@ const GalleryBook = () => {
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                   backgroundRepeat: "no-repeat",
-                  pointerEvents: "none", // không chặn click mũi tên
+                  pointerEvents: "none",
                   zIndex: 0,
                 }}
               />
@@ -119,7 +128,7 @@ const GalleryBook = () => {
                   position: "relative",
                   zIndex: 1,
                   height: "100%",
-                  px: { xs: 2, md: 6 }, // đệm lề để nội dung không “dạt” ra ngoài
+                  px: { xs: 2, md: 6 },
                 }}
               >
                 <Grid item xs={12} md={6}>
@@ -161,7 +170,7 @@ const GalleryBook = () => {
                   <Button
                     variant="contained"
                     component={Link}
-                    to={`/productdetail/${slide.id}`}
+                    to={`/productdetail/${slide.id}`} // giữ route FE hiện có, truyền eventId
                     size="large"
                     sx={{
                       backgroundColor: "#F86D72",
@@ -183,20 +192,16 @@ const GalleryBook = () => {
   );
 };
 
-/* ===== Arrows giữ nguyên ===== */
+/* ===== Arrows ===== */
 const NextArrow = ({ onClick }) => (
   <IconButton
     onClick={onClick}
     sx={{
       position: "absolute",
       top: "50%",
-      right: -40,
-      right: { xs: 8, md: 16 }, // 👈 nằm trong .slick-list, không bị cắt
+      right: { xs: 8, md: 16 },
       transform: "translateY(-50%)",
-      zIndex: 10,
-      color: "text.secondary",
-      backgroundColor: "transparent",
-      zIndex: 50, // 👈 nổi trên mọi lớp
+      zIndex: 50,
       color: "#fff",
       backgroundColor: "rgba(0,0,0,.35)",
       backdropFilter: "blur(2px)",
@@ -214,12 +219,8 @@ const PrevArrow = ({ onClick }) => (
     sx={{
       position: "absolute",
       top: "50%",
-      left: -40,
-      left: { xs: 8, md: 16 }, // 👈 nằm trong .slick-list
+      left: { xs: 8, md: 16 },
       transform: "translateY(-50%)",
-      zIndex: 10,
-      color: "text.secondary",
-      backgroundColor: "transparent",
       zIndex: 50,
       color: "#fff",
       backgroundColor: "rgba(0,0,0,.35)",

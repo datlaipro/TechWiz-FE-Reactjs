@@ -11,18 +11,18 @@ const BestSellingItems = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data } = await axios.get("http://localhost:6868/api/product");
+        const { data } = await axios.get("http://localhost:6868/api/events");
 
         // Map ProductDTO -> Event item cho ProductSlider (event-mode khi có startDate)
         const mappedEvents = data.map((p) => ({
           id: p.id,
           // ---- fields dùng cho Event UI ----
-          title: p.name, // tiêu đề sự kiện
-          image: p.images?.[0]?.imagePath || "/demo/images/placeholder.png",
+          title: p.title, // tiêu đề sự kiện
+          image: p.mainImageUrl,
           startDate: p.startDate || p.dateAdded || p.createdAt || null,
           endDate: p.endDate || null,
           location: p.location || p.department || "",
-          link: `/productdetail/${p.id}`, // đổi theo route chi tiết thực tế nếu cần
+          link: `/productdetail/${p.eventId}`, // đổi theo route chi tiết thực tế nếu cần
 
           // ---- giữ thêm các field cũ để tương thích (nếu slider fallback) ----
           name: p.name,
