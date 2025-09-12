@@ -68,13 +68,14 @@ const INITIAL_EVENT = {
   eventId: null, // tùy chọn
   title: "",
   description: "",
-  mainImageUrl: "",  // ✅ khớp BE
+  mainImageUrl: "", // ✅ khớp BE
   category: "",
-  date: "",          // yyyy-mm-dd (sự kiện 1 ngày)
-  startDate: "",     // yyyy-mm-dd (nhiều ngày)
-  endDate: "",       // yyyy-mm-dd (nhiều ngày)
-  time: "",          // hh:mm
+  date: "", // yyyy-mm-dd (sự kiện 1 ngày)
+  startDate: "", // yyyy-mm-dd (nhiều ngày)
+  endDate: "", // yyyy-mm-dd (nhiều ngày)
+  time: "", // hh:mm
   venue: "",
+  totalSeats: "", // ✅ thêm trường số chỗ ngồi
 };
 
 function AddEvent() {
@@ -117,6 +118,14 @@ function AddEvent() {
     }
     return true;
   };
+
+  // ✅ validate seats: cho phép trống, hoặc số nguyên không âm
+  const isSeatsValid = () => {
+    if (event.totalSeats === "") return true;
+    const n = Number(event.totalSeats);
+    return Number.isInteger(n) && n >= 0;
+  };
+
   const isValid = () => {
     const hasAnyDate = Boolean(event.date || event.startDate);
     return (
@@ -125,7 +134,8 @@ function AddEvent() {
       hasAnyDate &&
       event.time &&
       event.venue &&
-      isDateOrderValid()
+      isDateOrderValid() &&
+      isSeatsValid()
     );
   };
 
@@ -141,12 +151,17 @@ function AddEvent() {
       return;
     }
     if (!isValid()) {
-      const baseMsg =
-        "Vui lòng điền đủ: Tiêu đề, Thể loại, Thời gian, Địa điểm, và ít nhất một trong Ngày hoặc Ngày bắt đầu.";
-      const orderMsg = !isDateOrderValid()
-        ? " Ngày kết thúc phải lớn hơn hoặc bằng Ngày bắt đầu."
-        : "";
-      setError(baseMsg + orderMsg);
+      const msgs = [];
+      msgs.push(
+        "Vui lòng điền đủ: Tiêu đề, Thể loại, Thời gian, Địa điểm, và ít nhất một trong Ngày hoặc Ngày bắt đầu."
+      );
+      if (!isDateOrderValid()) {
+        msgs.push("Ngày kết thúc phải lớn hơn hoặc bằng Ngày bắt đầu.");
+      }
+      if (!isSeatsValid()) {
+        msgs.push("Số chỗ ngồi phải là số nguyên không âm.");
+      }
+      setError(msgs.join(" "));
       return;
     }
     setOpenConfirmDialog(true);
@@ -160,16 +175,18 @@ function AddEvent() {
     const payload = {
       title: event.title?.trim(),
       description: event.description?.trim() || null,
-      mainImageUrl: event.mainImageUrl?.trim() || null, // ✅ gửi đúng tên field
+      mainImageUrl: event.mainImageUrl?.trim() || null,
       category: event.category || null,
       venue: event.venue || null,
       time: normalizedTime || null,
       date: event.date || null,
       startDate: event.startDate || null,
       endDate: event.endDate || null,
+      totalSeats:
+        event.totalSeats === "" ? null : Number(event.totalSeats), // ✅ gửi kèm seats
     };
 
-    // yêu cầu phải có date hoặc startDate
+    // bắt buộc có date hoặc startDate
     if (!payload.date && !payload.startDate) {
       setError("Vui lòng chọn Ngày (1 ngày) hoặc Ngày bắt đầu (nhiều ngày).");
       return;
@@ -186,9 +203,6 @@ function AddEvent() {
       return;
     }
 
-    // 🔀 Chọn endpoint theo role:
-    // - ADMIN: POST /api/events
-    // - ORGANIZER (không phải admin): POST /api/organizer/events
     const url = isAdmin
       ? "http://localhost:6868/api/events"
       : "http://localhost:6868/api/organizer/events";
@@ -198,7 +212,7 @@ function AddEvent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ quan trọng
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
@@ -219,7 +233,7 @@ function AddEvent() {
       setEvent(INITIAL_EVENT); // reset
       setError("");
       setSuccess("Thêm sự kiện thành công!");
-      // navigate("/admin/event"); // nếu muốn điều hướng
+      // navigate("/admin/event");
     } catch (err) {
       console.error("Error:", err);
       setError(err?.message || "Lỗi khi thêm sự kiện");
@@ -449,6 +463,21 @@ function AddEvent() {
                 margin="normal"
                 required
                 sx={tfSx}
+              />
+
+              {/* ✅ Số chỗ ngồi */}
+              <TextField
+                fullWidth
+                label="Số chỗ ngồi (tổng)"
+                name="totalSeats"
+                type="number"
+                value={event.totalSeats}
+                onChange={handleChange}
+                margin="normal"
+                sx={tfSx}
+                inputProps={{ min: 0, step: 1 }}
+                error={!isSeatsValid()}
+                helperText={!isSeatsValid() ? "Vui lòng nhập số nguyên không âm" : " "}
               />
             </Grid>
           </Grid>

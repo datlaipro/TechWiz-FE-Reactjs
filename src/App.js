@@ -94,6 +94,7 @@ function AppContent() {
         {/* Các route admin yêu cầu đăng nhập và ROLE_ADMIN */}
         <Route
           path="/admin"
+          
           element={
             <ProtectedRoute requireAdmin={true}>
               <LayoutAdmin />
@@ -106,7 +107,7 @@ function AppContent() {
 
           <Route path="addevent" element={<AddProduct />} />
           <Route path="editvent/:id" element={<EditProduct />} />
-          <Route path="productview/:id" element={<ProductView />} />
+          <Route path="eventsview/:id" element={<ProductView />} />
           <Route path="order" element={<OrderList />} />
           <Route path="edit-order/:orderId" element={<EditOrder />} />
           <Route path="order/:orderId" element={<OrderDetails />} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -13,7 +13,7 @@ import {
   MenuItem,
   Divider,
   LinearProgress,
-} from '@mui/material';
+} from "@mui/material";
 import {
   FilterAlt,
   CheckCircle,
@@ -24,68 +24,130 @@ import {
   Article,
   PendingActions,
   WarningAmberRounded,
-} from '@mui/icons-material';
-import { DataGrid } from '@mui/x-data-grid';
+} from "@mui/icons-material";
+import { DataGrid } from "@mui/x-data-grid";
 
 /* ========================= Component ========================= */
-
+const fmtDate = (s) => (s ? String(s).slice(0, 10) : ""); // "2025-09-12"
+const fmtTime = (s) => (s ? String(s).slice(0, 5) : ""); // "08:30"
+const normStatus = (s) => String(s || "").toUpperCase();
 function Dashboard() {
   /* ---------- EVENTS & NEWS (Giai đoạn 1) ---------- */
   const [events, setEvents] = useState([]);
   const [news, setNews] = useState([]);
   const [evLoading, setEvLoading] = useState(true);
-  const [evError, setEvError] = useState('');
+  const [evError, setEvError] = useState("");
 
   // Bộ lọc giai đoạn 1
   const [filters, setFilters] = useState({
-    dept: 'Tất cả',
-    type: 'Tất cả',
-    startDate: '',
-    endDate: '',
+    dept: "Tất cả",
+    type: "Tất cả",
+    startDate: "",
+    endDate: "",
   });
+
+  // === Auth helpers ===
+  const STORAGE_KEY = "authState_v1";
+  function readAuth() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { token: null, role: null };
+      const obj = JSON.parse(raw);
+      const token = obj.accessToken || obj.token || obj.jwt || null;
+      let role =
+        obj.role || (Array.isArray(obj.roles) ? obj.roles[0] : null) || null;
+
+      // fallback lấy role từ JWT (nếu có)
+      if (!role && token && token.split(".").length === 3) {
+        try {
+          const payload = JSON.parse(
+            atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+          );
+          role =
+            payload.role ||
+            (Array.isArray(payload.roles) ? payload.roles[0] : null) ||
+            (Array.isArray(payload.authorities)
+              ? payload.authorities[0]
+              : null) ||
+            null;
+        } catch {}
+      }
+      return { token, role };
+    } catch {
+      return { token: null, role: null };
+    }
+  }
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [evRes, newsRes] = await Promise.allSettled([
-          fetch('http://localhost:6868/api/events'),// hàng chờ duyệt và sự kiện
-          fetch('http://localhost:6868/api/news'),
+        const { token } = readAuth(); // đã có helper này ở trên
+        const authHeaders = {
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        };
+
+        // 2 endpoint KHÁC NHAU
+        const EVENTS_URL =
+          "http://localhost:6868/api/admin/events/pending-approve";
+        const PENDING_URL =
+          "http://localhost:6868/api/admin/events/pending-approve";
+
+        const [eventsRes, pendingRes] = await Promise.allSettled([
+          fetch(EVENTS_URL, {
+            method: "GET",
+            headers: authHeaders /*, credentials:"include"*/,
+          }),
+          fetch(PENDING_URL, {
+            method: "GET",
+            headers: authHeaders /*, credentials:"include"*/,
+          }),
         ]);
 
-        let evData = [];
-        let newsData = [];
+        let evData = []; // lưu danh sach sự kiện đang diễn ra
+        let newData = [];
 
-        if (evRes.status === 'fulfilled' && evRes.value.ok) {
-          evData = await evRes.value.json();
-        }
-        if (newsRes.status === 'fulfilled' && newsRes.value.ok) {
-          newsData = await newsRes.value.json();
+        if (eventsRes.status === "fulfilled" && eventsRes.value.ok) {
+          evData = await eventsRes.value.json();
+        } else if (eventsRes.status === "rejected") {
+          console.warn("Fetch events failed:", eventsRes.reason);
         }
 
-        // Fallback demo nếu API chưa có
-        if (!Array.isArray(evData) || evData.length === 0) evData = demoEvents();
-        if (!Array.isArray(newsData) || newsData.length === 0) newsData = demoNews();
+        if (pendingRes.status === "fulfilled" && pendingRes.value.ok) {
+          newData = await pendingRes.value.json();
+        } else if (pendingRes.status === "rejected") {
+          console.warn("Fetch pending-approve failed:", pendingRes.reason);
+        }
+
+        if (!Array.isArray(evData)) evData = [];
+        if (!Array.isArray(newData)) newData = [];
 
         setEvents(evData);
-        setNews(newsData);
+        setNews(newData);
         setEvLoading(false);
       } catch (e) {
-        console.error('Events Error:', e);
-        setEvError('Không thể tải dữ liệu sự kiện/tin tức');
+        console.error("Events Error:", e);
+        setEvError("Không thể tải dữ liệu sự kiện/tin tức");
         setEvLoading(false);
       }
     };
+
     fetchAll();
   }, []);
 
   // Helpers
   const parseISO = (s) => (s ? new Date(s) : null);
   const sameDayKey = (d) =>
-    d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
+    d
+      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${String(d.getDate()).padStart(2, "0")}`
+      : "";
   const isInRange = (start, end, fromStr, toStr) => {
     if (!fromStr && !toStr) return true;
-    const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
-    const to = toStr ? new Date(toStr + 'T23:59:59') : null;
+    const from = fromStr ? new Date(fromStr + "T00:00:00") : null;
+    const to = toStr ? new Date(toStr + "T23:59:59") : null;
     const s = parseISO(start);
     const e = parseISO(end) || s;
     if (from && e < from) return false;
@@ -94,15 +156,34 @@ function Dashboard() {
   };
 
   // Options cho Select filter
-  const deptOptions = useMemo(() => ['Tất cả', ...Array.from(new Set(events.map((e) => e.department || 'Khác')))], [events]);
-  const typeOptions = useMemo(() => ['Tất cả', ...Array.from(new Set(events.map((e) => e.type || 'Khác')))], [events]);
+  const deptOptions = useMemo(
+    () => [
+      "Tất cả",
+      ...Array.from(new Set(events.map((e) => e.department || "Khác"))),
+    ],
+    [events]
+  );
+  const typeOptions = useMemo(
+    () => [
+      "Tất cả",
+      ...Array.from(new Set(events.map((e) => e.type || "Khác"))),
+    ],
+    [events]
+  );
 
   // Áp bộ lọc
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
-      const okDept = filters.dept === 'Tất cả' || (e.department || 'Khác') === filters.dept;
-      const okType = filters.type === 'Tất cả' || (e.type || 'Khác') === filters.type;
-      const okDate = isInRange(e.startDate, e.endDate, filters.startDate, filters.endDate);
+      const okDept =
+        filters.dept === "Tất cả" || (e.department || "Khác") === filters.dept;
+      const okType =
+        filters.type === "Tất cả" || (e.type || "Khác") === filters.type;
+      const okDate = isInRange(
+        e.startDate,
+        e.endDate,
+        filters.startDate,
+        filters.endDate
+      );
       return okDept && okType && okDate;
     });
   }, [events, filters]);
@@ -115,18 +196,34 @@ function Dashboard() {
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(ev);
     });
-    const entries = Array.from(map.entries()).sort(([a], [b]) => new Date(a) - new Date(b));
-    entries.forEach(([, list]) => list.sort((x, y) => parseISO(x.startDate) - parseISO(y.startDate)));
+    const entries = Array.from(map.entries()).sort(
+      ([a], [b]) => new Date(a) - new Date(b)
+    );
+    entries.forEach(([, list]) =>
+      list.sort((x, y) => parseISO(x.startDate) - parseISO(y.startDate))
+    );
     return entries;
   }, [filteredEvents]);
 
   // Metrics Giai đoạn 1
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const monthEnd = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59
+  );
 
-  const eventsThisMonth = events.filter(
-    (e) => isInRange(e.startDate, e.endDate, sameDayKey(monthStart), sameDayKey(monthEnd))
+  const eventsThisMonth = events.filter((e) =>
+    isInRange(
+      e.startDate,
+      e.endDate,
+      sameDayKey(monthStart),
+      sameDayKey(monthEnd)
+    )
   ).length;
 
   const newsThisMonth = news.filter((n) => {
@@ -134,8 +231,16 @@ function Dashboard() {
     return d && d >= monthStart && d <= monthEnd;
   }).length;
 
-  const pendingEvents = events.filter((e) => (e.status || '').toUpperCase() === 'IN_REVIEW' || (e.status || '').toUpperCase() === 'PENDING').length;
-  const pendingNews = news.filter((n) => (n.status || '').toUpperCase() === 'IN_REVIEW' || (n.status || '').toUpperCase() === 'PENDING').length;
+  const pendingEvents = events.filter(
+    (e) =>
+      (e.status || "").toUpperCase() === "IN_REVIEW" ||
+      (e.status || "").toUpperCase() === "PENDING"
+  ).length;
+  const pendingNews = news.filter(
+    (n) =>
+      (n.status || "").toUpperCase() === "IN_REVIEW" ||
+      (n.status || "").toUpperCase() === "PENDING"
+  ).length;
 
   // Đếm conflict đơn giản: cùng địa điểm & trùng thời gian
   const conflictCount = useMemo(() => {
@@ -143,10 +248,13 @@ function Dashboard() {
     const arr = [...events];
     for (let i = 0; i < arr.length; i++) {
       for (let j = i + 1; j < arr.length; j++) {
-        const a = arr[i], b = arr[j];
+        const a = arr[i],
+          b = arr[j];
         if (!a.venue || !b.venue || a.venue !== b.venue) continue;
-        const aS = parseISO(a.startDate), aE = parseISO(a.endDate) || aS;
-        const bS = parseISO(b.startDate), bE = parseISO(b.endDate) || bS;
+        const aS = parseISO(a.startDate),
+          aE = parseISO(a.endDate) || aS;
+        const bS = parseISO(b.startDate),
+          bE = parseISO(b.endDate) || bS;
         if (aS && aE && bS && bE && aS <= bE && bS <= aE) c++;
       }
     }
@@ -154,53 +262,89 @@ function Dashboard() {
   }, [events]);
 
   // Approval Queue rows (events + news)
+  // Approval Queue rows (chỉ sự kiện pending từ state `news`)
   const [queueRows, setQueueRows] = useState([]);
-  useEffect(() => {
-    const evRows = events
-      .filter((e) => (e.status || '').toUpperCase() === 'IN_REVIEW' || (e.status || '').toUpperCase() === 'PENDING')
-      .map((e) => ({
-        id: `EVT-${e.id}`,
-        type: 'Sự kiện',
-        title: e.title,
-        department: e.department || 'Khác',
-        status: e.status || 'PENDING',
-        scheduledAt: e.startDate,
-        venue: e.venue || '',
-      }));
-    const newsRows = news
-      .filter((n) => (n.status || '').toUpperCase() === 'IN_REVIEW' || (n.status || '').toUpperCase() === 'PENDING')
-      .map((n) => ({
-        id: `NEWS-${n.id}`,
-        type: 'Tin tức',
-        title: n.title,
-        department: n.department || 'Khác',
-        status: n.status || 'PENDING',
-        scheduledAt: n.publishAt || n.createdAt,
-        venue: '',
-      }));
-    setQueueRows([...evRows, ...newsRows]);
-  }, [events, news]);
 
-  const handleApprove = (id) => setQueueRows((prev) => prev.filter((r) => r.id !== id)); // fake
-  const handleReject = (id) => setQueueRows((prev) => prev.filter((r) => r.id !== id));   // fake
+  useEffect(() => {
+    const rows = (news || [])
+      .map((e) => {
+        const idRaw = e.eventId ?? e.id ?? e.uuid;
+        if (idRaw == null) return null;
+
+        const start = e.startDate ?? e.date ?? "";
+        const end = e.endDate ?? e.date ?? "";
+        const time = fmtTime(e.time);
+        const scheduled =
+          start && end && start !== end
+            ? `${fmtDate(start)} → ${fmtDate(end)}${time ? ` ${time}` : ""}`
+            : `${fmtDate(start || end)}${time ? ` ${time}` : ""}`;
+
+        return {
+          id: `EVT-${idRaw}`,
+          type: "Sự kiện",
+           eventId: idRaw,         // 👈 thêm trường số để gọi API
+          title: e.title || "—",
+          // 🔻 đổi từ department/faculty/... sang category
+          department: e.category || "—",
+          status: normStatus(e.status || "PENDING_APPROVAL"),
+          scheduledAt: scheduled,
+          venue: e.venue || "",
+        };
+      })
+      .filter(Boolean);
+
+    setQueueRows(rows);
+  }, [news]);
+  const { token } = readAuth(); // đã có helper này ở trên
+  const authHeaders = {
+    Accept: "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const handleApprove = (eventId) => {
+    fetch(`http://localhost:6868/api/admin/events/${eventId}/approve`, {
+      method: "POST",
+      headers: authHeaders, // phải nằm trong object options
+    });
+    setQueueRows((prev) => prev.filter((r) =>  r.eventId !== eventId));
+  }; // fake}
+  const handleReject = (eventId) => {
+    fetch(`http://localhost:6868/api/admin/events/${eventId}/reject`, {
+      method: "POST",
+      headers: authHeaders, // phải nằm trong object options
+    });
+    setQueueRows((prev) => prev.filter((r) =>  r.eventId !== eventId));
+  };
+  // ;}
 
   /* ---------- Loading & Error ---------- */
   if (evLoading) {
     return (
-      <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, bgcolor: 'grey.50' }}>
+      <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" }}>
         <Grid container spacing={2}>
           {[...Array(4)].map((_, i) => (
             <Grid item xs={12} sm={6} md={3} key={`sk-kpi-${i}`}>
-              <Skeleton variant="rectangular" height={160} sx={{ borderRadius: '16px' }} />
+              <Skeleton
+                variant="rectangular"
+                height={160}
+                sx={{ borderRadius: "16px" }}
+              />
             </Grid>
           ))}
         </Grid>
         <Grid container spacing={2} sx={{ mt: 2 }}>
-          <Grid item xs={12} >
-            <Skeleton variant="rectangular" height={420} sx={{ borderRadius: '12px' }} />
+          <Grid item xs={12}>
+            <Skeleton
+              variant="rectangular"
+              height={420}
+              sx={{ borderRadius: "12px" }}
+            />
           </Grid>
-          <Grid item xs={12} >
-            <Skeleton variant="rectangular" height={420} sx={{ borderRadius: '12px' }} />
+          <Grid item xs={12}>
+            <Skeleton
+              variant="rectangular"
+              height={420}
+              sx={{ borderRadius: "12px" }}
+            />
           </Grid>
         </Grid>
       </Box>
@@ -209,15 +353,17 @@ function Dashboard() {
 
   if (evError) {
     return (
-      <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, bgcolor: 'grey.50' }}>
-        <Alert severity="error" sx={{ mb: 2 }}>{evError}</Alert>
+      <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {evError}
+        </Alert>
       </Box>
     );
   }
 
   /* ========================= Render ========================= */
   return (
-    <Box sx={{ mt: 1, px: { xs: 1, sm: 2 }, bgcolor: 'grey.50' }}>
+    <Box sx={{ mt: 1, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" }}>
       {/* TOP: KPI Sự kiện & Tin tức (to gấp đôi) */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <KpiCard
@@ -252,7 +398,11 @@ function Dashboard() {
 
       {/* Bộ lọc Giai đoạn 1 */}
       <Paper sx={{ ...paperCardSx, mb: 2 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          alignItems="center"
+        >
           <Stack direction="row" spacing={1} alignItems="center">
             <FilterAlt />
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
@@ -265,11 +415,15 @@ function Dashboard() {
             size="small"
             label="Phòng ban"
             value={filters.dept}
-            onChange={(e) => setFilters((f) => ({ ...f, dept: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, dept: e.target.value }))
+            }
             sx={{ minWidth: 180 }}
           >
             {deptOptions.map((opt) => (
-              <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+              <MenuItem key={opt} value={opt}>
+                {opt}
+              </MenuItem>
             ))}
           </TextField>
           <TextField
@@ -277,11 +431,15 @@ function Dashboard() {
             size="small"
             label="Loại sự kiện"
             value={filters.type}
-            onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, type: e.target.value }))
+            }
             sx={{ minWidth: 180 }}
           >
             {typeOptions.map((opt) => (
-              <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+              <MenuItem key={opt} value={opt}>
+                {opt}
+              </MenuItem>
             ))}
           </TextField>
           <TextField
@@ -290,7 +448,9 @@ function Dashboard() {
             label="Từ ngày"
             InputLabelProps={{ shrink: true }}
             value={filters.startDate}
-            onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, startDate: e.target.value }))
+            }
           />
           <TextField
             size="small"
@@ -298,11 +458,20 @@ function Dashboard() {
             label="Đến ngày"
             InputLabelProps={{ shrink: true }}
             value={filters.endDate}
-            onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, endDate: e.target.value }))
+            }
           />
           <Button
             variant="outlined"
-            onClick={() => setFilters({ dept: 'Tất cả', type: 'Tất cả', startDate: '', endDate: '' })}
+            onClick={() =>
+              setFilters({
+                dept: "Tất cả",
+                type: "Tất cả",
+                startDate: "",
+                endDate: "",
+              })
+            }
           >
             Xóa lọc
           </Button>
@@ -312,7 +481,7 @@ function Dashboard() {
       {/* Lưới: Calendar List (trái) + Approval Queue (phải) */}
       <Grid container spacing={2}>
         {/* Calendar List */}
-        <Grid item xs={12} >
+        <Grid item xs={12}>
           <Paper sx={paperCardSx}>
             <Typography variant="h6" sx={cardTitleSx}>
               Lịch sự kiện (theo ngày)
@@ -320,10 +489,18 @@ function Dashboard() {
             {eventsByDay.length === 0 ? (
               <Alert severity="info">Không có sự kiện phù hợp bộ lọc</Alert>
             ) : (
-              <Stack spacing={2} sx={{ maxHeight: 420, overflow: 'auto', pr: 1 }}>
+              <Stack
+                spacing={2}
+                sx={{ maxHeight: 420, overflow: "auto", pr: 1 }}
+              >
                 {eventsByDay.map(([day, list]) => (
                   <Box key={day}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      sx={{ mb: 1 }}
+                    >
                       <Chip label={day} icon={<CalendarMonthRounded />} />
                       <Typography variant="subtitle2" color="text.secondary">
                         {list.length} sự kiện
@@ -335,57 +512,126 @@ function Dashboard() {
                         const e = parseISO(ev.endDate) || s;
                         const timeLabel =
                           s && e
-                            ? `${String(s.getHours()).padStart(2, '0')}:${String(s.getMinutes()).padStart(2, '0')} - ${String(e.getHours()).padStart(2, '0')}:${String(e.getMinutes()).padStart(2, '0')}`
-                            : '—';
+                            ? `${String(s.getHours()).padStart(
+                                2,
+                                "0"
+                              )}:${String(s.getMinutes()).padStart(
+                                2,
+                                "0"
+                              )} - ${String(e.getHours()).padStart(
+                                2,
+                                "0"
+                              )}:${String(e.getMinutes()).padStart(2, "0")}`
+                            : "—";
                         const capacity = Number(ev.capacity) || 0;
-                        const registered = Math.min(Number(ev.registered) || 0, capacity || Number.MAX_SAFE_INTEGER);
-                        const progress = capacity > 0 ? Math.round((registered / capacity) * 100) : 0;
+                        const registered = Math.min(
+                          Number(ev.registered) || 0,
+                          capacity || Number.MAX_SAFE_INTEGER
+                        );
+                        const progress =
+                          capacity > 0
+                            ? Math.round((registered / capacity) * 100)
+                            : 0;
 
                         return (
-                          <Box key={ev.id} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                          <Box
+                            key={ev.id}
+                            sx={{
+                              p: 1.5,
+                              border: "1px solid",
+                              borderColor: "divider",
+                              borderRadius: 1.5,
+                            }}
+                          >
                             <Stack
-                              direction={{ xs: 'column', sm: 'row' }}
+                              direction={{ xs: "column", sm: "row" }}
                               spacing={1}
-                              alignItems={{ xs: 'flex-start', sm: 'center' }}
+                              alignItems={{ xs: "flex-start", sm: "center" }}
                               justifyContent="space-between"
                             >
-                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                              <Typography
+                                variant="subtitle1"
+                                sx={{ fontWeight: 600 }}
+                              >
                                 {ev.title}
                               </Typography>
                               <Stack direction="row" spacing={1}>
-                                <Chip size="small" label={ev.department || 'Khác'} />
-                                <Chip size="small" label={ev.type || 'Sự kiện'} color="primary" variant="outlined" />
                                 <Chip
                                   size="small"
-                                  label={(ev.status || 'PENDING').toUpperCase()}
-                                  color={(ev.status || '').toUpperCase() === 'PUBLISHED' ? 'success' : 'warning'}
+                                  label={ev.department || "Khác"}
+                                />
+                                <Chip
+                                  size="small"
+                                  label={ev.type || "Sự kiện"}
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                                <Chip
+                                  size="small"
+                                  label={(ev.status || "PENDING").toUpperCase()}
+                                  color={
+                                    (ev.status || "").toUpperCase() ===
+                                    "PUBLISHED"
+                                      ? "success"
+                                      : "warning"
+                                  }
                                   variant="outlined"
                                 />
                               </Stack>
                             </Stack>
-                            <Stack direction="row" spacing={2} sx={{ mt: 1 }} flexWrap="wrap">
-                              <Stack direction="row" spacing={1} alignItems="center">
+                            <Stack
+                              direction="row"
+                              spacing={2}
+                              sx={{ mt: 1 }}
+                              flexWrap="wrap"
+                            >
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                              >
                                 <AccessTimeRounded fontSize="small" />
-                                <Typography variant="body2">{timeLabel}</Typography>
+                                <Typography variant="body2">
+                                  {timeLabel}
+                                </Typography>
                               </Stack>
                               {ev.venue && (
-                                <Stack direction="row" spacing={1} alignItems="center">
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  alignItems="center"
+                                >
                                   <PlaceRounded fontSize="small" />
-                                  <Typography variant="body2">{ev.venue}</Typography>
+                                  <Typography variant="body2">
+                                    {ev.venue}
+                                  </Typography>
                                 </Stack>
                               )}
                             </Stack>
                             {capacity > 0 && (
                               <Box sx={{ mt: 1 }}>
-                                <Stack direction="row" justifyContent="space-between">
-                                  <Typography variant="caption" color="text.secondary">
+                                <Stack
+                                  direction="row"
+                                  justifyContent="space-between"
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
                                     Đăng ký: {registered}/{capacity}
                                   </Typography>
-                                  <Typography variant="caption" color="text.secondary">
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
                                     {progress}%
                                   </Typography>
                                 </Stack>
-                                <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 1 }} />
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={progress}
+                                  sx={{ height: 8, borderRadius: 1 }}
+                                />
                               </Box>
                             )}
                           </Box>
@@ -400,7 +646,7 @@ function Dashboard() {
         </Grid>
 
         {/* Approval Queue */}
-        <Grid item xs={12} >
+        <Grid item xs={12}>
           <Paper sx={paperCardSx}>
             <Typography variant="h6" sx={cardTitleSx}>
               Hàng chờ duyệt
@@ -409,26 +655,35 @@ function Dashboard() {
               <DataGrid
                 rows={queueRows}
                 columns={[
-                  { field: 'type', headerName: 'Loại', width: 90 },
-                  { field: 'title', headerName: 'Tiêu đề', flex: 1, minWidth: 160 },
-                  { field: 'department', headerName: 'Phòng ban', width: 120 },
+                  { field: "type", headerName: "Loại", width: 90 },
                   {
-                    field: 'status',
-                    headerName: 'Trạng thái',
+                    field: "title",
+                    headerName: "Tiêu đề",
+                    flex: 1,
+                    minWidth: 160,
+                  },
+                  { field: "department", headerName: "Phòng ban", width: 120 },
+                  {
+                    field: "status",
+                    headerName: "Trạng thái",
                     width: 120,
                     renderCell: (p) => (
                       <Chip
                         size="small"
-                        label={(p.value || '').toUpperCase()}
-                        color={(p.value || '').toUpperCase() === 'PENDING' ? 'warning' : 'info'}
+                        label={(p.value || "").toUpperCase()}
+                        color={
+                          (p.value || "").toUpperCase() === "PENDING"
+                            ? "warning"
+                            : "info"
+                        }
                         variant="outlined"
                       />
                     ),
                   },
-                  { field: 'scheduledAt', headerName: 'Lịch', width: 120 },
+                  { field: "scheduledAt", headerName: "Lịch", width: 120 },
                   {
-                    field: 'actions',
-                    headerName: 'Thao tác',
+                    field: "actions",
+                    headerName: "Thao tác",
                     width: 160,
                     sortable: false,
                     renderCell: (p) => (
@@ -438,7 +693,7 @@ function Dashboard() {
                           color="success"
                           variant="outlined"
                           startIcon={<CheckCircle />}
-                          onClick={() => handleApprove(p.row.id)}
+                          onClick={() => handleApprove(p.row.eventId)}
                         >
                           Duyệt
                         </Button>
@@ -447,7 +702,7 @@ function Dashboard() {
                           color="error"
                           variant="outlined"
                           startIcon={<Cancel />}
-                          onClick={() => handleReject(p.row.id)}
+                          onClick={() => handleReject(p.row.eventId)}
                         >
                           Hủy
                         </Button>
@@ -457,12 +712,15 @@ function Dashboard() {
                 ]}
                 hideFooterSelectedRowCount
                 pageSizeOptions={[5, 10]}
-                initialState={{ pagination: { paginationModel: { pageSize: 5, page: 0 } } }}
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 5, page: 0 } },
+                }}
               />
             </Box>
             <Divider sx={{ my: 1.5 }} />
             <Typography variant="body2" color="text.secondary">
-              *Thao tác duyệt/hủy hiện chỉ cập nhật UI. Khi có API, gọi endpoint tương ứng rồi refetch.
+              *Thao tác duyệt/hủy hiện chỉ cập nhật UI. Khi có API, gọi endpoint
+              tương ứng rồi refetch.
             </Typography>
           </Paper>
         </Grid>
@@ -475,14 +733,17 @@ function Dashboard() {
 
 const paperCardSx = {
   p: 2,
-  borderRadius: '12px',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-  bgcolor: 'white',
-  transition: 'all 0.3s ease',
-  '&:hover': { boxShadow: '0 8px 28px rgba(0,0,0,0.12)', transform: 'translateY(-2px)' },
+  borderRadius: "12px",
+  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+  bgcolor: "white",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    boxShadow: "0 8px 28px rgba(0,0,0,0.12)",
+    transform: "translateY(-2px)",
+  },
 };
 
-const cardTitleSx = { fontWeight: 'bold', color: 'text.primary', mb: 1.5 };
+const cardTitleSx = { fontWeight: "bold", color: "text.primary", mb: 1.5 };
 
 function KpiCard({ title, value, icon, gradient, large }) {
   return (
@@ -490,23 +751,29 @@ function KpiCard({ title, value, icon, gradient, large }) {
       <Paper
         sx={{
           p: large ? 3 : 2,
-          borderRadius: '16px',
-          boxShadow: '0 6px 24px rgba(0, 0, 0, 0.12)',
+          borderRadius: "16px",
+          boxShadow: "0 6px 24px rgba(0, 0, 0, 0.12)",
           background: gradient,
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
+          color: "white",
+          display: "flex",
+          alignItems: "center",
           minHeight: large ? 140 : 100,
-          transition: 'all 0.3s ease',
-          '&:hover': { boxShadow: '0 10px 32px rgba(0, 0, 0, 0.18)', transform: 'translateY(-4px)' },
+          transition: "all 0.3s ease",
+          "&:hover": {
+            boxShadow: "0 10px 32px rgba(0, 0, 0, 0.18)",
+            transform: "translateY(-4px)",
+          },
         }}
       >
         <Box sx={{ mr: 2 }}>{icon}</Box>
         <Box>
-          <Typography variant={large ? 'body1' : 'body2'} sx={{ fontWeight: 600 }}>
+          <Typography
+            variant={large ? "body1" : "body2"}
+            sx={{ fontWeight: 600 }}
+          >
             {title}
           </Typography>
-          <Typography variant={large ? 'h4' : 'h5'} sx={{ fontWeight: 'bold' }}>
+          <Typography variant={large ? "h4" : "h5"} sx={{ fontWeight: "bold" }}>
             {value}
           </Typography>
         </Box>
@@ -520,8 +787,22 @@ function demoEvents() {
   const today = new Date();
   const iso = (d) => d.toISOString().slice(0, 19);
   const d = (offsetDay, sh, sm, eh, em) => {
-    const s = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offsetDay, sh, sm, 0);
-    const e = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offsetDay, eh, em, 0);
+    const s = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + offsetDay,
+      sh,
+      sm,
+      0
+    );
+    const e = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + offsetDay,
+      eh,
+      em,
+      0
+    );
     return [iso(s), iso(e)];
   };
   const [s1, e1] = d(0, 9, 0, 11, 0);
@@ -531,11 +812,66 @@ function demoEvents() {
   const [s5, e5] = d(0, 10, 0, 12, 0); // conflict venue C101
 
   return [
-    { id: 1, title: 'Workshop React cơ bản', department: 'Khoa CNTT', type: 'Workshop', status: 'PUBLISHED', startDate: s1, endDate: e1, venue: 'A201', capacity: 120, registered: 76 },
-    { id: 2, title: 'Hội thảo AI & Data', department: 'Khoa CNTT', type: 'Hội thảo', status: 'IN_REVIEW', startDate: s2, endDate: e2, venue: 'Hall 1', capacity: 300, registered: 210 },
-    { id: 3, title: 'Cuộc thi Học thuật', department: 'Khoa Kinh tế', type: 'Cuộc thi', status: 'PENDING', startDate: s3, endDate: e3, venue: 'C101', capacity: 80, registered: 80 },
-    { id: 4, title: 'Talkshow Khởi nghiệp', department: 'Phòng CTSV', type: 'Talkshow', status: 'PENDING', startDate: s4, endDate: e4, venue: 'Sân khấu trung tâm', capacity: 500, registered: 320 },
-    { id: 5, title: 'Seminar Blockchain', department: 'Khoa CNTT', type: 'Seminar', status: 'PUBLISHED', startDate: s5, endDate: e5, venue: 'C101', capacity: 60, registered: 45 },
+    {
+      id: 1,
+      title: "Workshop React cơ bản",
+      department: "Khoa CNTT",
+      type: "Workshop",
+      status: "PUBLISHED",
+      startDate: s1,
+      endDate: e1,
+      venue: "A201",
+      capacity: 120,
+      registered: 76,
+    },
+    {
+      id: 2,
+      title: "Hội thảo AI & Data",
+      department: "Khoa CNTT",
+      type: "Hội thảo",
+      status: "IN_REVIEW",
+      startDate: s2,
+      endDate: e2,
+      venue: "Hall 1",
+      capacity: 300,
+      registered: 210,
+    },
+    {
+      id: 3,
+      title: "Cuộc thi Học thuật",
+      department: "Khoa Kinh tế",
+      type: "Cuộc thi",
+      status: "PENDING",
+      startDate: s3,
+      endDate: e3,
+      venue: "C101",
+      capacity: 80,
+      registered: 80,
+    },
+    {
+      id: 4,
+      title: "Talkshow Khởi nghiệp",
+      department: "Phòng CTSV",
+      type: "Talkshow",
+      status: "PENDING",
+      startDate: s4,
+      endDate: e4,
+      venue: "Sân khấu trung tâm",
+      capacity: 500,
+      registered: 320,
+    },
+    {
+      id: 5,
+      title: "Seminar Blockchain",
+      department: "Khoa CNTT",
+      type: "Seminar",
+      status: "PUBLISHED",
+      startDate: s5,
+      endDate: e5,
+      venue: "C101",
+      capacity: 60,
+      registered: 45,
+    },
   ];
 }
 
@@ -543,9 +879,27 @@ function demoNews() {
   const now = new Date();
   const iso = (d) => d.toISOString().slice(0, 19);
   return [
-    { id: 101, title: 'Thông báo lịch học tuần này', department: 'Phòng Đào tạo', status: 'PUBLISHED', publishAt: iso(now) },
-    { id: 102, title: 'Mời tham gia hội thảo AI', department: 'Khoa CNTT', status: 'IN_REVIEW', publishAt: iso(new Date(now.getTime() + 86400000)) },
-    { id: 103, title: 'Tổng kết cuộc thi nghiên cứu khoa học', department: 'Phòng KHCN', status: 'PENDING', publishAt: iso(new Date(now.getTime() + 2 * 86400000)) },
+    {
+      id: 101,
+      title: "Thông báo lịch học tuần này",
+      department: "Phòng Đào tạo",
+      status: "PUBLISHED",
+      publishAt: iso(now),
+    },
+    {
+      id: 102,
+      title: "Mời tham gia hội thảo AI",
+      department: "Khoa CNTT",
+      status: "IN_REVIEW",
+      publishAt: iso(new Date(now.getTime() + 86400000)),
+    },
+    {
+      id: 103,
+      title: "Tổng kết cuộc thi nghiên cứu khoa học",
+      department: "Phòng KHCN",
+      status: "PENDING",
+      publishAt: iso(new Date(now.getTime() + 2 * 86400000)),
+    },
   ];
 }
 

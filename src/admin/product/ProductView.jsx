@@ -35,7 +35,7 @@ function ProductView() {
 
   // Fetch dữ liệu sản phẩm
   useEffect(() => {
-    fetch(`http://localhost:6868/api/product/${id}`)
+    fetch(`http://localhost:6868/api/events/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error('Product not found');
         return res.json();

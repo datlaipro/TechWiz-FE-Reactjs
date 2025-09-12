@@ -14,38 +14,126 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
 
-// const STORAGE_KEY = "authState_v1";
+const STORAGE_KEY_NEW = "authState_v1";     // ✅ mới: object { isLoggedIn, user, token }
+const STORAGE_KEY_OLD = "STORAGE_KEY";      // ⛳ cũ: chỉ lưu chuỗi token
+const STORAGE_KEY_JWT = "jwtToken";         // ⛳ cũ: chỉ lưu chuỗi token
+
 const API_BASE =
   import.meta?.env?.VITE_API_BASE_URL ||
   process.env.REACT_APP_API_BASE_URL ||
   "http://localhost:6868";
 
-// ---- helpers ----
+/* ---------- Helpers: decode JWT & đọc localStorage ---------- */
+function b64urlDecode(str) {
+  try {
+    const pad = (s) => s + "=".repeat((4 - (s.length % 4)) % 4);
+    const b64 = pad(str.replace(/-/g, "+").replace(/_/g, "/"));
+    return decodeURIComponent(
+      atob(b64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+  } catch {
+    return "";
+  }
+}
+function parseJwt(token) {
+  try {
+    const parts = token?.split(".") || [];
+    if (parts.length !== 3) return {};
+    return JSON.parse(b64urlDecode(parts[1]) || "{}");
+  } catch {
+    return {};
+  }
+}
+function isTokenExpired(token) {
+  try {
+    const { exp } = parseJwt(token);
+    if (!exp) return false; // nếu không có exp, coi như không hết hạn
+    const nowSec = Math.floor(Date.now() / 1000);
+    return exp <= nowSec;
+  } catch {
+    return true;
+  }
+}
+
+/** Trả về { isLoggedIn, user, accessToken } với ưu tiên:
+ * 1) authState_v1: { token, user, isLoggedIn }
+ * 2) STORAGE_KEY: token (chuỗi)
+ * 3) jwtToken: token (chuỗi)
+ * Tự decode user từ JWT nếu user trống.
+ */
 function readAuthFromStorage() {
   try {
-    const token = localStorage.getItem("STORAGE_KEY");
-    // if (!raw) return { isLoggedIn: false, user: null, accessToken: null };
-    // const saved = JSON.parse(raw);
-    // cố gắng bắt nhiều tên trường token thường gặp
-    // const token =
-    //   saved?.jwtToken ||
-    //   saved?.token ||
-    //   saved?.jwt ||
-    //   saved?.user?.accessToken ||
-    //   saved?.user?.token ||
-    //   saved?.user?.jwt ||
-    //   null;
-    return { accessToken: token };
+    // 1) Định dạng mới
+    const rawNew = localStorage.getItem(STORAGE_KEY_NEW);
+    if (rawNew) {
+      try {
+        const saved = JSON.parse(rawNew);
+        const token =
+          saved?.token ||
+          saved?.jwtToken ||
+          saved?.user?.token ||
+          saved?.user?.jwt ||
+          null;
+
+        const logged = !!token && !isTokenExpired(token);
+        // nếu không có user thì decode từ token
+        let user = saved?.user || null;
+        if (!user && token) {
+          const p = parseJwt(token);
+          user = {
+            email: p?.sub || p?.email || "",
+            fullName: p?.name || p?.fullName || "",
+            roles: p?.roles || "",
+          };
+        }
+        return { isLoggedIn: logged, user, accessToken: token || null };
+      } catch {
+        // fall through để thử key cũ
+      }
+    }
+
+    // 2) Key cũ: STORAGE_KEY lưu thẳng token
+    const tokOld = localStorage.getItem(STORAGE_KEY_OLD);
+    if (tokOld) {
+      const logged = !isTokenExpired(tokOld);
+      const p = parseJwt(tokOld);
+      const user = {
+        email: p?.sub || p?.email || "",
+        fullName: p?.name || p?.fullName || "",
+        roles: p?.roles || "",
+      };
+      return { isLoggedIn: logged, user, accessToken: tokOld };
+    }
+
+    // 3) Key cũ: jwtToken
+    const tokJwt = localStorage.getItem(STORAGE_KEY_JWT);
+    if (tokJwt) {
+      const logged = !isTokenExpired(tokJwt);
+      const p = parseJwt(tokJwt);
+      const user = {
+        email: p?.sub || p?.email || "",
+        fullName: p?.name || p?.fullName || "",
+        roles: p?.roles || "",
+      };
+      return { isLoggedIn: logged, user, accessToken: tokJwt };
+    }
+
+    return { isLoggedIn: false, user: null, accessToken: null };
   } catch {
     return { isLoggedIn: false, user: null, accessToken: null };
   }
 }
+
 const fmt = (s) => {
   const d = new Date(s);
   return Number.isNaN(+d) ? "N/A" : d.toLocaleString("vi-VN");
 };
 const isUpcoming = (s) => new Date(s).getTime() >= Date.now();
 
+/* ================= Component ================= */
 export default function MyAccount() {
   const [{ isLoggedIn, user, accessToken }, setAuth] = useState(readAuthFromStorage());
   const [tickets, setTickets] = useState([]);
@@ -56,13 +144,24 @@ export default function MyAccount() {
   const [qrDialog, setQrDialog] = useState({ open: false, img: "", title: "" });
   const [snack, setSnack] = useState({ open: false, msg: "", sev: "success" });
 
-  // đồng bộ lại auth khi user F5 hoặc tab khác thay đổi localStorage
+  // đồng bộ lại auth khi localStorage thay đổi ở tab khác
   useEffect(() => {
     const onStorage = (e) => {
-      if (e.key === "STORAGE_KEY") setAuth(readAuthFromStorage());
+      if (
+        e.key === STORAGE_KEY_NEW ||
+        e.key === STORAGE_KEY_OLD ||
+        e.key === STORAGE_KEY_JWT
+      ) {
+        setAuth(readAuthFromStorage());
+      }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // cũng đọc lại 1 lần khi mount (trường hợp bạn vừa login ở cùng tab)
+  useEffect(() => {
+    setAuth(readAuthFromStorage());
   }, []);
 
   const fetchTickets = async () => {
@@ -82,10 +181,13 @@ export default function MyAccount() {
   };
 
   useEffect(() => {
-    if (isLoggedIn && accessToken) fetchTickets();
-    else setLoading(false);
+    if (accessToken && !isTokenExpired(accessToken)) {
+      fetchTickets();
+    } else {
+      setLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn, accessToken]);
+  }, [accessToken]);
 
   const filtered = useMemo(() => {
     let arr = [...tickets];
@@ -136,7 +238,6 @@ export default function MyAccount() {
 
   return (
     <Container sx={{ py: 4 }}>
-      {/* banner phong cách “cổng sự kiện trường đại học” */}
       <Paper
         elevation={0}
         sx={{
@@ -156,7 +257,7 @@ export default function MyAccount() {
             </Typography>
           </Box>
           <Box sx={{ flex: 1 }} />
-          {isLoggedIn && accessToken && (
+          {accessToken && (
             <IconButton onClick={fetchTickets} title="Làm mới">
               <RefreshIcon />
             </IconButton>
@@ -164,8 +265,7 @@ export default function MyAccount() {
         </Stack>
       </Paper>
 
-      {/* Nếu chưa đăng nhập / chưa có token */}
-      { !accessToken ? (
+      {!accessToken ? (
         <Paper sx={{ p: 4, borderRadius: 3, textAlign: "center" }}>
           <QrCode2Icon fontSize="large" />
           <Typography variant="h6" mt={1}>Bạn chưa đăng nhập</Typography>
@@ -186,7 +286,7 @@ export default function MyAccount() {
             <Paper sx={{ p: 3, borderRadius: 3 }}>
               <Stack spacing={2} alignItems="center">
                 <Avatar sx={{ width: 84, height: 84, bgcolor: "secondary.main" }}>
-                  {(user?.fullName?.[0] || user?.name?.[0] || "U").toUpperCase()}
+                  {(user?.fullName?.[0] || user?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
                 </Avatar>
                 <Box sx={{ textAlign: "center" }}>
                   <Typography variant="h6" fontWeight={700}>
