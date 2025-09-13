@@ -43,7 +43,7 @@ const GalleryBook = () => {
             description: e.description || "Khám phá chi tiết sự kiện.",
             buttonText: "Xem chi tiết",
             image:
-              e.image ||
+              e.mainImageUrl ||
               e.banner ||
               e.imagePath ||
               "/demo/images/placeholder.png",

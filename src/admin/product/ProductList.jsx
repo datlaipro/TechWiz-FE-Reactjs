@@ -444,7 +444,7 @@ function ProductList() {
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((ev) => {
                 const eventId = ev.eventId ?? ev.event_id ?? ev.id; // 👈 ưu tiên eventId
-                const imgUrl = ev.img || ev.imageUrl || ev.image || "";
+                const imgUrl = ev.mainImageUrl ||  ev.image || "";
                 const date = ev.date || ev.Date || "";
                 const startDate = ev.start_date || ev.startDate || "";
                 const endDate = ev.end_date || ev.endDate || "";
@@ -517,32 +517,6 @@ function ProductList() {
                         }}
                       >
                         <VisibilityIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleEdit(eventId)}
-                        sx={{
-                          color: "warning.main",
-                          "&:hover": {
-                            bgcolor: "warning.light",
-                            transform: "scale(1.1)",
-                          },
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDelete(eventId)}
-                        sx={{
-                          color: "error.main",
-                          "&:hover": {
-                            bgcolor: "error.light",
-                            transform: "scale(1.1)",
-                          },
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        <DeleteIcon />
                       </IconButton>
                     </TableCell>
                   </TableRow>

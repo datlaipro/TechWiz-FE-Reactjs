@@ -29,10 +29,25 @@ import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
 import CategoryIcon from "@mui/icons-material/Category";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import VerifiedRoundedIcon from "@mui/icons-material/VerifiedRounded";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import readAuth from "../auth/getToken";
-function EditProduct() {
-  const { id } = useParams();
+
+function AdminEventEdit() {
   const navigate = useNavigate();
+  const handleDelete = (id) => {
+    if (window.confirm("Bạn có chắc muốn xóa sự kiện này?")) {
+      fetch(`http://localhost:6868/api/organizer/events/${id}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+      alert("Sự kiện đã được xóa.");
+      navigate("/admin");
+      // Khi dùng mock: chỉ xóa trên state
+      //   setEvents((prev) => prev.filter((ev) => (ev.id ?? ev.event_id) !== id));
+    }
+  };
+  const { id } = useParams();
 
   // ===== Event state =====
   const [event, setEvent] = useState(null);
@@ -55,10 +70,10 @@ function EditProduct() {
     "REJECTED",
     "DRAFT",
   ];
+
   // ===== Helpers =====
   const toDateInput = (v) => {
     if (!v) return "";
-    // v có thể "YYYY-MM-DD" hoặc ISO
     if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
     const d = new Date(v);
     if (Number.isNaN(d.getTime())) return "";
@@ -70,7 +85,6 @@ function EditProduct() {
     if (/^\d{2}:\d{2}(:\d{2})?$/.test(v)) return v.slice(0, 5);
     const d = new Date(v);
     if (Number.isNaN(d.getTime())) return "";
-    // HH:mm theo local — đủ dùng cho input type="time"
     const hh = String(d.getHours()).padStart(2, "0");
     const mm = String(d.getMinutes()).padStart(2, "0");
     return `${hh}:${mm}`;
@@ -80,7 +94,6 @@ function EditProduct() {
     if (!iso) return "";
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
-    // yyyy-MM-ddTHH:mm cho input datetime-local
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
@@ -88,15 +101,19 @@ function EditProduct() {
     const mm = String(d.getMinutes()).padStart(2, "0");
     return `${y}-${m}-${day}T${hh}:${mm}`;
   };
-  const { token, role, userId } = readAuth(); // lấy thêm role, userId
+
+  // ===== Auth =====
+  const { token, role, userId } = readAuth();
   const authHeaders = {
     Accept: "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
-  // ===== Fetch event (GIỮ NGUYÊN API đường dẫn gốc của bạn) =====
+  const API = "http://localhost:6868";
+
+  // ===== Fetch event =====
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:6868/api/events/${id}`, { headers: authHeaders })
+    fetch(`${API}/api/admin/pending/${id}`, { headers: authHeaders })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -127,8 +144,13 @@ function EditProduct() {
         };
         setEvent(mapped);
         setLoading(false);
+      })
+      .catch((e) => {
+        setError(`Không tải được dữ liệu: ${e.message}`);
+        setLoading(false);
       });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // ===== Handle change =====
   const handleChange = (e) => {
@@ -144,7 +166,6 @@ function EditProduct() {
   const isValid = () => {
     if (!event) return false;
     if (!event.title || !event.category || !event.venue) return false;
-    // cần có ít nhất "date" (sự kiện 1 ngày) hoặc "startDate & endDate" (nhiều ngày)
     const hasSingleDay = !!event.date;
     const hasRange = !!event.startDate && !!event.endDate;
     if (!hasSingleDay && !hasRange) return false;
@@ -173,7 +194,7 @@ function EditProduct() {
   };
   const handleCloseConfirmDialog = () => setOpenConfirmDialog(false);
 
-  // ===== Submit =====
+  // ===== SAVE (PUT /organizer/events/{id}) =====
   const handleSubmit = async () => {
     if (!event) return;
     const normalizedDate =
@@ -183,6 +204,7 @@ function EditProduct() {
         ? `${event.time}:00`
         : event.time
       : "00:00:00";
+
     const payload = {
       eventId: event.eventId,
       title: event.title,
@@ -194,8 +216,9 @@ function EditProduct() {
       endDate: event.endDate || null,
       venue: event.venue,
 
-      organizerId: userId, // <-- LẤY TỪ JWT
-      status: event.status,
+      organizerId: userId, // lấy từ JWT
+      // QUAN TRỌNG: dùng approvalStatus thay vì status để đúng kiểu dữ liệu
+      approvalStatus: event.approvalStatus,
       approvedBy: event.approvedBy ? parseInt(event.approvedBy, 10) : null,
       approvedAt: event.approvedAt
         ? new Date(event.approvedAt).toISOString()
@@ -206,15 +229,11 @@ function EditProduct() {
     };
 
     try {
-      const res = await fetch(
-        `http://localhost:6868/api/organizer/events/${id}`,
-        {
-          method: "PUT",
-
-          headers: { ...authHeaders, "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`${API}/api/organizer/events/${id}`, {
+        method: "PUT",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       if (!res.ok) {
         let msg = `HTTP ${res.status}`;
         try {
@@ -222,7 +241,7 @@ function EditProduct() {
           msg += text ? ` – ${text}` : "";
         } catch {}
         setError(`Cập nhật thất bại: ${msg}`);
-        return; // đừng navigate khi lỗi
+        return;
       }
       setOpenConfirmDialog(false);
       navigate("/admin/product");
@@ -232,6 +251,41 @@ function EditProduct() {
       setOpenConfirmDialog(false);
     }
   };
+
+  // ===== APPROVE / REJECT (POST /admin/events/{id}/approve|reject) =====
+  const postModeration = async (action) => {
+    try {
+      const res = await fetch(`${API}/api/admin/events/${id}/${action}`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const t = await res.text();
+          msg += t ? ` – ${t}` : "";
+        } catch {}
+        setError(
+          `${action === "approve" ? "Duyệt" : "Từ chối"} thất bại: ${msg}`
+        );
+        return;
+      }
+      setEvent((prev) => ({
+        ...prev,
+        approvalStatus: action === "approve" ? "APPROVED" : "REJECTED",
+        approvedBy:
+          action === "approve" ? userId ?? prev.approvedBy : prev.approvedBy,
+        approvedAt:
+          action === "approve" ? new Date().toISOString() : prev.approvedAt,
+      }));
+    } catch (e) {
+      setError(
+        `${action === "approve" ? "Duyệt" : "Từ chối"} thất bại: ${e.message}`
+      );
+    }
+  };
+  const handleApprove = () => postModeration("approve");
+  const handleReject = () => postModeration("reject");
 
   // ===== UI =====
   if (loading) {
@@ -447,6 +501,19 @@ function EditProduct() {
                   />
                 </Grid>
               </Grid>
+
+              <TextField
+                fullWidth
+                type="time"
+                label="Giờ"
+                name="time"
+                value={toTimeInput(event.time)}
+                onChange={handleChange}
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+                sx={fieldSx}
+              />
+
               <TextField
                 fullWidth
                 type="number"
@@ -566,30 +633,7 @@ function EditProduct() {
                 </Select>
               </FormControl>
 
-              {/* <TextField
-                fullWidth
-                type="number"
-                label="Organizer ID"
-                name="organizerId"
-                value={event.organizerId}
-                onChange={handleChange}
-                margin="normal"
-                sx={fieldSx}
-              /> */}
-
               <Grid container spacing={2}>
-                {/* <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Approved By (ID)"
-                    name="approvedBy"
-                    value={event.approvedBy}
-                    onChange={handleChange}
-                    margin="normal"
-                    sx={fieldSx}
-                  />
-                </Grid> */}
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -623,7 +667,8 @@ function EditProduct() {
             </Grid>
           </Grid>
 
-          <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
+          {/* Nút hành động */}
+          <Box sx={{ mt: 4, display: "flex", gap: 2, flexWrap: "wrap" }}>
             <Button
               type="submit"
               variant="contained"
@@ -632,6 +677,7 @@ function EditProduct() {
             >
               Lưu
             </Button>
+
             <Button
               variant="outlined"
               onClick={() => navigate("/admin/product")}
@@ -639,10 +685,36 @@ function EditProduct() {
             >
               Hủy
             </Button>
+
+            {/* Duyệt / Từ chối ngay trong trang Sửa */}
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<CheckCircleRoundedIcon />}
+              onClick={handleApprove}
+              disabled={
+                String(event.approvalStatus).toUpperCase() === "APPROVED"
+              }
+            >
+              Duyệt
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<CancelRoundedIcon />}
+              onClick={() => {
+                handleDelete(id);
+              }}
+              disabled={
+                String(event.approvalStatus).toUpperCase() === "REJECTED"
+              }
+            >
+              Xóa
+            </Button>
           </Box>
         </Box>
 
-        {/* Modal xác nhận */}
+        {/* Modal xác nhận LƯU */}
         <Dialog
           open={openConfirmDialog}
           onClose={handleCloseConfirmDialog}
@@ -762,4 +834,4 @@ const buttonOutlineSx = {
   "&:hover": { bgcolor: "grey.100", borderColor: "grey.500" },
 };
 
-export default EditProduct;
+export default AdminEventEdit;

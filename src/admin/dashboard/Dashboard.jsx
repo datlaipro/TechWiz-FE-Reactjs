@@ -35,7 +35,7 @@ const normStatus = (s) => String(s || "").toUpperCase();
 function Dashboard() {
   const navigate = useNavigate();
   const handleView = (eventId) => navigate(`/admin/adminview/${eventId}`);
-  const handleEdit = (eventId) => navigate(`/admin/editevent/${eventId}`);
+  const handleEdit = (eventId) => navigate(`/admin/editview/${eventId}`);
   /* ---------- EVENTS & NEWS (Giai đoạn 1) ---------- */
   const [events, setEvents] = useState([]);
   const [news, setNews] = useState([]);
@@ -92,8 +92,7 @@ function Dashboard() {
         };
 
         // 2 endpoint KHÁC NHAU
-        const EVENTS_URL =
-          "http://localhost:6868/api/admin/events/pending-approve";
+        const EVENTS_URL = "http://localhost:6868/api/events";
         const PENDING_URL =
           "http://localhost:6868/api/admin/events/pending-approve";
 
@@ -235,16 +234,16 @@ function Dashboard() {
     return d && d >= monthStart && d <= monthEnd;
   }).length;
 
-  const pendingEvents = events.filter(
+  const pendingEvents = news.filter(
     (e) =>
       (e.status || "").toUpperCase() === "IN_REVIEW" ||
-      (e.status || "").toUpperCase() === "PENDING"
+      (e.status || "").toUpperCase() === "PENDING_APPROVAL"
   ).length;
-  const pendingNews = news.filter(
-    (n) =>
-      (n.status || "").toUpperCase() === "IN_REVIEW" ||
-      (n.status || "").toUpperCase() === "PENDING"
-  ).length;
+  // const pendingNews = news.filter(
+  //   (n) =>
+  //     (n.status || "").toUpperCase() === "IN_REVIEW" ||
+  //     (n.status || "").toUpperCase() === "PENDING"
+  // ).length;
 
   // Đếm conflict đơn giản: cùng địa điểm & trùng thời gian
   const conflictCount = useMemo(() => {
@@ -379,21 +378,21 @@ function Dashboard() {
         />
         <KpiCard
           large
-          title="Tin tức trong tháng"
+          title="Sự kiện đăng diễn ra "
           value={newsThisMonth}
           icon={<Article sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #00897b 0%, #26a69a 100%)"
         />
         <KpiCard
           large
-          title="Chờ duyệt (Sự kiện/Tin)"
-          value={`${pendingEvents}/${pendingNews}`}
+          title="Chờ duyệt (Sự kiện)"
+          value={`${pendingEvents}`}
           icon={<PendingActions sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #5e35b1 0%, #9575cd 100%)"
         />
         <KpiCard
           large
-          title="Cảnh báo trùng lịch"
+          title="Số lượng người đăng ký"
           value={conflictCount}
           icon={<WarningAmberRounded sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #f57c00 0%, #ffb74d 100%)"
@@ -700,7 +699,14 @@ function Dashboard() {
                         >
                           Xem
                         </Button>
-                        
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          onClick={() => handleEdit(p.row.eventId)}
+                        >
+                          Sửa
+                        </Button>
                       </Stack>
                     ),
                   },

@@ -52,6 +52,7 @@ import EditImportProduct from './admin/import-product/EditImportProduct';
 import MyAccount from "./layouts/home/header/MyAccount";
 import QrKit from "./admin/layout/QrKit";
 import AdminEventView from "./admin/dashboard/AdminEventView";
+import AdminEventEdit from "./admin/dashboard/AdminEventEdit";
 // Thành phần mới để chứa nội dung của App
 function AppContent() {
   const { snackbar, closeSnackbar } = useAuth();
@@ -110,6 +111,7 @@ function AppContent() {
           <Route path="editevent/:id" element={<EditProduct />} />
           <Route path="eventsview/:id" element={<ProductView />} />
           <Route path="adminview/:id" element={<AdminEventView />} />
+          <Route path="editview/:id" element={<AdminEventEdit />} />
           <Route path="order" element={<OrderList />} />
           <Route path="edit-order/:orderId" element={<EditOrder />} />
           <Route path="order/:orderId" element={<OrderDetails />} />

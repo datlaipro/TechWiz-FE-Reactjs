@@ -203,9 +203,9 @@ function AddEvent() {
       return;
     }
 
-    const url = isAdmin
-      ? "http://localhost:6868/api/events"
-      : "http://localhost:6868/api/organizer/events";
+    const url = 
+    
+       "http://localhost:6868/api/organizer/events";
 
     try {
       const res = await fetch(url, {

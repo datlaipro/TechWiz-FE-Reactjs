@@ -30,19 +30,77 @@ const money = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 };
-const ts = (d) => {
-  const t = d ? new Date(d).getTime() : NaN;
-  return Number.isFinite(t) ? t : 0;
-};
 
-/* ===== helpers ===== */
-function fmtRange(startDate, endDate) {
+/* ====== Date helpers (local) ====== */
+// Parse "YYYY-MM-DD" + "HH:mm:ss" -> Date (local)
+function buildLocalDate(dateStr, timeStr) {
+  if (!dateStr) return null;
   try {
-    const s = startDate ? new Date(startDate) : null;
-    const e = endDate ? new Date(endDate) : null;
+    const [y, m, d] = dateStr.split("-").map(Number);
+    let hh = 0,
+      mm = 0,
+      ss = 0;
+    if (timeStr) {
+      const parts = timeStr.split(":").map(Number);
+      hh = parts[0] ?? 0;
+      mm = parts[1] ?? 0;
+      ss = parts[2] ?? 0;
+    }
+    return new Date(y, (m || 1) - 1, d || 1, hh, mm, ss);
+  } catch {
+    return null;
+  }
+}
+
+// Lấy mốc bắt đầu & kết thúc thực tế từ object event
+function getEventStart(ev) {
+  // Ưu tiên startDate + time; fallback date + time; cuối cùng chỉ có startDate/date
+  return (
+    buildLocalDate(ev?.startDate, ev?.time) ||
+    buildLocalDate(ev?.date, ev?.time) ||
+    buildLocalDate(ev?.startDate) ||
+    buildLocalDate(ev?.date) ||
+    null
+  );
+}
+
+function getEventEnd(ev) {
+  const start =
+    buildLocalDate(ev?.startDate, ev?.time) ||
+    buildLocalDate(ev?.date, ev?.time) ||
+    buildLocalDate(ev?.startDate) ||
+    buildLocalDate(ev?.date) ||
+    null;
+
+  // Nếu có endDate/endTime -> dùng chúng (fallback endTime = 23:59:59 nếu chỉ có endDate)
+  if (ev?.endDate || ev?.endTime) {
+    const endDateStr = ev?.endDate || ev?.startDate || ev?.date;
+    const endTimeStr = ev?.endTime || (ev?.endDate ? "23:59:59" : ev?.time);
+    return buildLocalDate(endDateStr, endTimeStr) || start;
+  }
+
+  // Nếu chỉ có date (không có time) -> coi kết thúc cuối ngày đó
+  if ((ev?.date || ev?.startDate) && !ev?.time && !ev?.endTime) {
+    const d = ev?.date || ev?.startDate;
+    return buildLocalDate(d, "23:59:59") || start;
+  }
+
+  // Nếu có start + time nhưng không có end -> coi như kết thúc tại thời điểm bắt đầu
+  return start;
+}
+
+// Đã kết thúc chưa?
+function isEventOver(ev, now = new Date()) {
+  const end = getEventEnd(ev);
+  if (!end) return false;
+  return now.getTime() > end.getTime();
+}
+
+// Format phạm vi thời gian từ Date -> string
+function fmtRangeByDates(s, e) {
+  try {
     if (!s) return "";
     const dOpt = { dateStyle: "medium", timeStyle: "short" };
-
     if (!e) return `Bắt đầu: ${s.toLocaleString("vi-VN", dOpt)}`;
 
     const sameDay =
@@ -54,16 +112,20 @@ function fmtRange(startDate, endDate) {
       ? `${s.toLocaleString("vi-VN", dOpt)} – ${e.toLocaleTimeString("vi-VN", {
           timeStyle: "short",
         })}`
-      : `${s.toLocaleString("vi-VN", dOpt)} → ${e.toLocaleString(
-          "vi-VN",
-          dOpt
-        )}`;
+      : `${s.toLocaleString("vi-VN", dOpt)} → ${e.toLocaleString("vi-VN", dOpt)}`;
   } catch {
     return "";
   }
 }
-const isEvent = (item) => !!item?.startDate;
 
+// Format phạm vi thời gian từ object event -> string
+function fmtEventRange(ev) {
+  const s = getEventStart(ev);
+  const e = getEventEnd(ev);
+  return fmtRangeByDates(s, e);
+}
+
+/* ===== helpers cho filter bar ===== */
 function yyyymmdd(d) {
   const pad = (n) => (n < 10 ? "0" + n : "" + n);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -84,19 +146,17 @@ function currentMonthRange() {
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   return { from: yyyymmdd(start), to: yyyymmdd(end) };
 }
-function badgeParts(dt) {
-  if (!dt) return { d: "", m: "" };
-  const d = new Date(dt);
-  return {
-    d: d.getDate().toString().padStart(2, "0"),
-    m: d.toLocaleString("vi-VN", { month: "short" }).replace(".", ""),
-  };
-}
 
-/* ===== Event card (layout cho sự kiện trường) ===== */
-/* ===== Event card (layout cho sự kiện trường) ===== */
+/* ===== phân biệt event hay product (fallback) ===== */
+const isEvent = (item) => !!(item?.startDate || item?.date);
+
+/* ===== Event card ===== */
 const EventCard = ({ event }) => {
   const navigate = useNavigate();
+
+  const over = isEventOver(event);
+  const detailPath = event?.link;
+  const canVisit = !!detailPath && !over;
 
   return (
     <Paper
@@ -111,35 +171,22 @@ const EventCard = ({ event }) => {
         border: "1px solid #eee",
       }}
     >
-      {/* Ảnh 16:9 – đã bỏ ô ngày góc trái */}
-      <Box
-        sx={{ position: "relative", aspectRatio: "16 / 9", bgcolor: "#fafafa" }}
-      >
+      {/* Ảnh 16:9 */}
+      <Box sx={{ position: "relative", aspectRatio: "16 / 9", bgcolor: "#fafafa" }}>
         <Box
           component="img"
-          src={event?.image || "/demo/images/placeholder.png"}
+          src={event?.mainImageUrl || ""}
           alt={event.title || event.name}
-          sx={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
+          onError={(e) => {
+            e.currentTarget.src = "/demo/images/placeholder.png";
           }}
+          sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
           loading="lazy"
         />
       </Box>
 
       {/* Nội dung */}
-      <Box
-        sx={{
-          p: 2,
-          display: "flex",
-          flexDirection: "column",
-          gap: 1,
-          flexGrow: 1,
-        }}
-      >
+      <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1, flexGrow: 1 }}>
         <Typography
           variant="subtitle1"
           sx={{
@@ -157,38 +204,34 @@ const EventCard = ({ event }) => {
 
         <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
           {event?.department && <Chip size="small" label={event.department} />}
-          {event?.category && (
-            <Chip size="small" variant="outlined" label={event.category} />
-          )}
+          {event?.category && <Chip size="small" variant="outlined" label={str(event.category)} />}
+          {event?.status && <Chip size="small" color="default" variant="outlined" label={str(event.status)} />}
         </Stack>
 
-        {(event?.startDate || event?.endDate) && (
+        {(event?.startDate || event?.date) && (
           <Stack spacing={0.5} sx={{ mt: 0.5 }}>
             <Stack direction="row" spacing={1} alignItems="center">
               <CalendarMonthRounded fontSize="small" />
-              <Typography variant="body2">
-                {fmtRange(event.startDate, event.endDate)}
-              </Typography>
+              <Typography variant="body2">{fmtEventRange(event)}</Typography>
             </Stack>
-            {event?.location && (
+            {(event?.location || event?.venue) && (
               <Stack direction="row" spacing={1} alignItems="center">
                 <PlaceRounded fontSize="small" />
-                <Typography variant="body2">{event.location}</Typography>
+                <Typography variant="body2">{event.location || event.venue}</Typography>
               </Stack>
             )}
           </Stack>
         )}
 
-        {event?.link && (
-          <Button
-            fullWidth
-            sx={{ mt: "auto" }}
-            variant="contained"
-            onClick={() => navigate(event.link)}
-          >
-            REGISTER
-          </Button>
-        )}
+        <Button
+          fullWidth
+          sx={{ mt: "auto" }}
+          variant="contained"
+          disabled={!canVisit}
+          onClick={() => canVisit && navigate(detailPath)}
+        >
+          {over ? "Đã kết thúc" : "Visit Now"}
+        </Button>
       </Box>
     </Paper>
   );
@@ -227,31 +270,51 @@ const ProductList = ({ filters: initialFilters }) => {
         return res.json();
       })
       .then((data) => {
-        const mapped = data.map((x) => ({
-          id: x.id,
-          // fallback name để tránh undefined khi tìm kiếm
-          name: x.name || x.title || "",
-          title: x.title || x.name || "",
-          author: x.author,
-          image: x.images?.[0]?.imagePath || "/demo/images/placeholder.png",
-          discount: x.discountPercentage
-            ? `${x.discountPercentage}% OFF`
-            : null,
-          price: x.price,
-          salePrice: x.salePrice || null,
-          rating: 4,
-          category:
-            typeof x.category === "string"
-              ? x.category
-              : x?.category?.name || x?.categoryName || "",
-          department: x.department || "",
-          language: x.language,
-          description: x.description || "",
-          startDate: x.startDate || x.dateAdded || x.createdAt || null,
-          endDate: x.endDate || null,
-          location: x.location || x.department || "",
-          link: `/productdetail/${x.eventId || x.id}`, // giữ đường dẫn cũ để bạn không bị 404
-        }));
+        // Map đúng fields BE -> UI
+        const mapped = data.map((x, idx) => {
+          const id = x.eventId ?? x.id ?? idx;
+          return {
+            // nhận diện
+            id,
+            eventId: x.eventId ?? x.id ?? null,
+
+            // nội dung
+            title: x.title || x.name || "",
+            name: x.name || x.title || "",
+            description: x.description || "",
+
+            // phân loại / trạng thái
+            category:
+              typeof x.category === "string"
+                ? x.category
+                : x?.category?.name || x?.categoryName || "",
+            status: x.status || x.approval_status || "",
+
+            // thời gian (giữ cả cặp date/time và startDate/endDate)
+            date: x.date || null, // "YYYY-MM-DD"
+            time: x.time || x.startTime || null, // "HH:mm:ss"
+            startDate: x.startDate || x.date || null, // ngày bắt đầu
+            endDate: x.endDate || x.date || null, // ngày kết thúc nếu có
+            endTime: x.endTime || null,
+
+            // địa điểm
+            venue: x.venue || "",
+            location: x.location || x.venue || "",
+
+            // ảnh từ BE
+            mainImageUrl: x.mainImageUrl || "",
+
+            // các field khác (nếu dùng UI cũ)
+            author: x.author,
+            discount: x.discountPercentage ? `${x.discountPercentage}% OFF` : null,
+            price: x.price,
+            salePrice: x.salePrice || null,
+            rating: Number.isFinite(Number(x.rating)) ? Number(x.rating) : 4,
+
+            // link chi tiết
+            link: `/productdetail/${id}`,
+          };
+        });
         setProducts(mapped);
         setLoading(false);
       })
@@ -268,10 +331,8 @@ const ProductList = ({ filters: initialFilters }) => {
     const matchesSearch =
       !q || lower(p.name).includes(q) || lower(p.description).includes(q);
 
-    const matchesCategory =
-      !filters.category || p.category === filters.category;
-    const matchesLanguage =
-      !filters.language || p.language === filters.language;
+    const matchesCategory = !filters.category || str(p.category) === str(filters.category);
+    const matchesLanguage = !filters.language || p.language === filters.language;
 
     const price = p.salePrice ?? p.price;
     let matchesPrice = true;
@@ -282,16 +343,17 @@ const ProductList = ({ filters: initialFilters }) => {
       matchesPrice = money(price) >= minVND && money(price) < maxVND;
     }
 
-    // Lọc theo khoảng ngày (giao với [from, to])
-    const from = filters.dateFrom ? new Date(filters.dateFrom) : null;
-    const to = filters.dateTo ? new Date(filters.dateTo) : null;
+    // Lọc theo khoảng ngày (giao với [from, to]) — dùng mốc start/end thực tế
+    const from = filters.dateFrom ? buildLocalDate(filters.dateFrom, "00:00:00") : null;
+    const to = filters.dateTo ? buildLocalDate(filters.dateTo, "23:59:59") : null;
+
     let matchesDate = true;
     if (from || to) {
-      const s = p.startDate ? new Date(p.startDate) : null;
-      const e = p.endDate ? new Date(p.endDate) : s;
+      const s = getEventStart(p);
+      const e = getEventEnd(p) || s;
       if (s) {
         const startOk = !to || s <= to;
-        const endOk = !from || (e || s) >= from;
+        const endOk = !from || e >= from;
         matchesDate = startOk && endOk;
       } else {
         matchesDate = false;
@@ -307,42 +369,42 @@ const ProductList = ({ filters: initialFilters }) => {
     );
   });
 
-  /* ==== SẮP XẾP (an toàn, không lỗi localeCompare) ==== */
+  /* ==== SẮP XẾP ==== */
   const comparatorMap = {
     "name-asc": (a, b) => viCompare(a.name, b.name),
     "name-desc": (a, b) => viCompare(b.name, a.name),
 
-    "date-asc": (a, b) => ts(a.startDate) - ts(b.startDate),
-    "date-desc": (a, b) => ts(b.startDate) - ts(a.startDate),
+    "date-asc": (a, b) => {
+      const ta = getEventStart(a)?.getTime() ?? 0;
+      const tb = getEventStart(b)?.getTime() ?? 0;
+      return ta - tb;
+    },
+    "date-desc": (a, b) => {
+      const ta = getEventStart(a)?.getTime() ?? 0;
+      const tb = getEventStart(b)?.getTime() ?? 0;
+      return tb - ta;
+    },
 
-    "price-asc": (a, b) =>
-      money(a.salePrice ?? a.price) - money(b.salePrice ?? b.price),
-    "price-desc": (a, b) =>
-      money(b.salePrice ?? b.price) - money(a.salePrice ?? a.price),
+    "price-asc": (a, b) => money(a.salePrice ?? a.price) - money(b.salePrice ?? b.price),
+    "price-desc": (a, b) => money(b.salePrice ?? b.price) - money(a.salePrice ?? a.price),
 
-    "rating-highest": (a, b) =>
-      (Number(b.rating) || 0) - (Number(a.rating) || 0),
-    "rating-lowest": (a, b) =>
-      (Number(a.rating) || 0) - (Number(b.rating) || 0),
+    "rating-highest": (a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0),
+    "rating-lowest": (a, b) => (Number(a.rating) || 0) - (Number(b.rating) || 0),
   };
   const sorter = comparatorMap[filters?.sort] ?? (() => 0);
   const sortedProducts = [...filteredProducts].sort(sorter);
 
+  // Reset page mỗi khi filter đổi
   useEffect(() => {
     setPage(0);
   }, [filters]);
 
   const totalPages = Math.ceil(sortedProducts.length / size);
-  const displayedProducts = sortedProducts.slice(
-    page * size,
-    (page + 1) * size
-  );
+  const displayedProducts = sortedProducts.slice(page * size, (page + 1) * size);
 
   // Handlers cho filter bar
-  const handleChange = (key) => (e) =>
-    setFilters((f) => ({ ...f, [key]: e.target.value }));
-  const setRange = ({ from, to }) =>
-    setFilters((f) => ({ ...f, dateFrom: from, dateTo: to }));
+  const handleChange = (key) => (e) => setFilters((f) => ({ ...f, [key]: e.target.value }));
+  const setRange = ({ from, to }) => setFilters((f) => ({ ...f, dateFrom: from, dateTo: to }));
 
   /* ===== render ===== */
   if (loading) {
@@ -414,25 +476,13 @@ const ProductList = ({ filters: initialFilters }) => {
           </Grid>
 
           <Grid item xs={12} md={2.5} sx={{ display: "flex", gap: 1 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => setRange(currentWeekRange())}
-            >
+            <Button variant="outlined" size="small" onClick={() => setRange(currentWeekRange())}>
               TUẦN NÀY
             </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => setRange(currentMonthRange())}
-            >
+            <Button variant="outlined" size="small" onClick={() => setRange(currentMonthRange())}>
               THÁNG NÀY
             </Button>
-            <Button
-              variant="text"
-              size="small"
-              onClick={() => setRange({ from: "", to: "" })}
-            >
+            <Button variant="text" size="small" onClick={() => setRange({ from: "", to: "" })}>
               XOÁ NGÀY
             </Button>
           </Grid>
@@ -440,11 +490,7 @@ const ProductList = ({ filters: initialFilters }) => {
           <Grid item xs={12} md={1.5}>
             <FormControl fullWidth size="small">
               <InputLabel>Sắp xếp</InputLabel>
-              <Select
-                label="Sắp xếp"
-                value={filters.sort || ""}
-                onChange={handleChange("sort")}
-              >
+              <Select label="Sắp xếp" value={filters.sort || ""} onChange={handleChange("sort")}>
                 <MenuItem value="">Mặc định</MenuItem>
                 <MenuItem value="name-asc">Tên A → Z</MenuItem>
                 <MenuItem value="name-desc">Tên Z → A</MenuItem>
@@ -463,25 +509,13 @@ const ProductList = ({ filters: initialFilters }) => {
       {/* Lưới kết quả: card sự kiện */}
       <Grid container spacing={3}>
         {displayedProducts.map((p) => (
-          <Grid
-            item
-            xs={12}
-            sm={6}
-            md={4}
-            lg={3}
-            key={p.id}
-            sx={{ display: "flex" }}
-          >
+          <Grid item xs={12} sm={6} md={4} lg={3} key={p.id} sx={{ display: "flex" }}>
             {isEvent(p) ? <EventCard event={p} /> : <ProductCard product={p} />}
           </Grid>
         ))}
       </Grid>
 
-      <PaginationComponent
-        page={page}
-        totalPages={totalPages}
-        onPageChange={(newPage) => setPage(newPage)}
-      />
+      <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage) => setPage(newPage)} />
     </>
   );
 };

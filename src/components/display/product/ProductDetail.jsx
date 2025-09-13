@@ -14,55 +14,74 @@ import LatestPosts from "../post/LatestPosts";
 import InstagramGallery from "../GroupItems/InstagramGallery";
 import InfoProduct from "./InfoProduct";
 
-import StarIcon from "@mui/icons-material/Star";
 import CalendarMonthRounded from "@mui/icons-material/CalendarMonthRounded";
-import PlaceRounded from "@mui/icons-material/PlaceRounded";
 import AccessTimeRounded from "@mui/icons-material/AccessTimeRounded";
+import PeopleAltRounded from "@mui/icons-material/PeopleAltRounded";
+
+const FallbackImg = "https://picsum.photos/seed/event/1280/720";
+
+function fmtDate(d) {
+  if (!d) return "";
+  try {
+    return new Date(d).toLocaleDateString("vi-VN");
+  } catch {
+    return d;
+  }
+}
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState(null);
+
+  const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     fetch(`http://localhost:6868/api/events/${id}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Không tìm thấy sản phẩm");
+        if (!res.ok) throw new Error("Không tìm thấy sự kiện");
         return res.json();
       })
       .then((data) => {
-        setProduct({
-          id: data.id,
-          title: data.name,
-          price: data.salePrice || data.price,
-          oldPrice: data.salePrice ? data.price : null,
-          description: data.description,
-          stock: data.quantity,
-          rating: Math.round(data.rating || 0),
-          images:
-            Array.isArray(data.images) && data.images.length > 0
-              ? data.images
-              : ["/demo/images/placeholder.png"],
-          startTime: data.startTime,
-          endTime: data.endTime,
-          eventDateText: data.eventDateText,
-          venueName: data.venueName,
-          venueAddress: data.venueAddress,
+        // ==== Map field từ BE (không tạo thêm trường mới) ====
+        const startDate = data.startDate || data.date || null;
+        const endDate = data.endDate || null;
+        const timeRaw = data.time ? String(data.time) : null; // "06:00:00"
+        const timeText =
+          timeRaw && timeRaw.includes(":") ? timeRaw.slice(0, 5) : timeRaw;
+
+        const eventDateText =
+          startDate && endDate && startDate !== endDate
+            ? `${fmtDate(startDate)} – ${fmtDate(endDate)}`
+            : fmtDate(startDate);
+
+        setEvent({
+          id: data.eventId ?? data.id ?? id,
+          title: data.title ?? data.name ?? "Sự kiện",
+          description: data.description ?? "",
+          category: data.category,
+          startDate,
+          endDate,
+          time: timeText, // hiển thị HH:mm
+          venueName: data.venue ?? "",
+          venueAddress: data.venueAddress ?? "",
+          organizerId: data.organizerId,
+          status: data.status,
+          totalSeats: data.totalSeats,
+          mainImageUrl: data.mainImageUrl || FallbackImg,
+          // các giá trị tiện dùng cho InfoProduct
+          eventDateText,
+          startTime: timeText || null,
+          endTime: null,
         });
         setLoading(false);
       })
       .catch(() => {
-        setError("Lỗi khi tải sản phẩm");
+        setError("Lỗi khi tải sự kiện");
         setLoading(false);
       });
   }, [id]);
-
-  const truncate = (t, n) =>
-    t && t.length > n ? t.substring(0, n) + "..." : t || "";
-  const fmtVND = (n) =>
-    typeof n === "number" ? new Intl.NumberFormat("vi-VN").format(n) + " đ" : n;
 
   if (loading) {
     return (
@@ -71,12 +90,10 @@ const ProductDetail = () => {
       </Box>
     );
   }
-  if (error || !product) {
+  if (error || !event) {
     return (
       <Box sx={{ mt: 6, textAlign: "center" }}>
-        <Typography color="error">
-          {error || "Không tìm thấy sản phẩm"}
-        </Typography>
+        <Typography color="error">{error || "Không tìm thấy sự kiện"}</Typography>
         <Button
           variant="contained"
           sx={{ mt: 2, borderRadius: 1.5, textTransform: "none" }}
@@ -90,20 +107,13 @@ const ProductDetail = () => {
 
   const {
     title,
-    price,
-    oldPrice,
-    rating,
-    images,
-    startTime,
-    endTime,
-    eventDateText,
-    venueName,
-    venueAddress,
-    stock,
-    description,
-  } = product;
-
-  const poster = images[0];
+    startDate,
+    endDate,
+    time,
+    totalSeats,
+    mainImageUrl,
+    // các field khác vẫn giữ trong object event để truyền cho InfoProduct
+  } = event;
 
   return (
     <>
@@ -111,20 +121,12 @@ const ProductDetail = () => {
         title="Detail"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "ProductDetail" },
-          { label: truncate(title, 20) },
+          { label: "EventDetail" },
+          { label: title },
         ]}
       />
 
-      <Box
-        sx={{
-          // width: "100%",
-          maxWidth: 1300,
-          mx: "auto",
-          px: { xs: 1.5, md: 2 },
-          py: { xs: 2, md: 3 },
-        }}
-      >
+      <Box sx={{ maxWidth: 1300, mx: "auto", px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
         <Grid
           container
           spacing={0}
@@ -133,178 +135,111 @@ const ProductDetail = () => {
             overflow: "hidden",
             boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
             bgcolor: "#1f2427",
-            alignItems: "stretch", // <- kéo giãn 2 cột bằng nhau
-            minHeight: { xs: 320, sm: 380, md: 460, lg: 520 }, // <- tăng chiều cao chung
+            alignItems: "stretch",
           }}
         >
-          {/* LEFT – panel thông tin */}
-          {/* LEFT – panel thông tin */}
-          <Grid item xs={12} md={5}>
+          {/* LEFT: để trống/CTA nhẹ nếu muốn, nội dung chi tiết sẽ ở InfoProduct bên dưới */}
+          <Grid item xs={12} md={5} order={{ xs: 2, md: 1 }}>
+            <Box sx={{ p: { xs: 2, md: 3 }, color: "#e6f3e6", minHeight: 200 }}>
+              <Typography sx={{ opacity: 0.8 }}>
+                Chi tiết sự kiện ở bên dưới.
+              </Typography>
+              <Button
+                variant="contained"
+                sx={{
+                  mt: 2,
+                  bgcolor: "#22c55e",
+                  color: "#0b2e13",
+                  fontWeight: 800,
+                  px: 2.6,
+                  py: 1.1,
+                  borderRadius: 1.5,
+                  textTransform: "none",
+                  "&:hover": { bgcolor: "#16a34a" },
+                }}
+              >
+                Register
+              </Button>
+            </Box>
+          </Grid>
+
+          {/* RIGHT: Poster + overlay 5 thông tin bắt buộc */}
+          <Grid item xs={12} md={7} order={{ xs: 1, md: 2 }} sx={{ position: "relative", bgcolor: "#0c0f12" }}>
+            <Box
+              component="img"
+              src={mainImageUrl || FallbackImg}
+              alt={title}
+              onError={(e) => (e.currentTarget.src = FallbackImg)}
+              sx={{
+                width: "100%",
+                height: "100%",
+                minHeight: { xs: 260, sm: 340, md: 460 },
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+
+            {/* Gradient để chữ đọc rõ */}
             <Box
               sx={{
-                p: { xs: 2, md: 3 },
-                color: "#e6f3e6",
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 100%)",
+              }}
+            />
 
-                height: "100%",
-                zIndex: 2, // tránh bị phần khác đè
-                display: "flex",
-                flexDirection: "column",
-                gap: 0.75,
+            {/* Overlay thông tin */}
+            <Box
+              sx={{
+                position: "absolute",
+                left: { xs: 12, md: 18 },
+                right: { xs: 12, md: 18 },
+                bottom: { xs: 12, md: 18 },
+                color: "white",
               }}
             >
-              {/* ====== LEFT CONTENT (luôn hiển thị, có fallback) ====== */}
               <Typography
                 sx={{
-                  fontSize: { xs: 18, md: 20 },
+                  fontSize: { xs: 18, md: 22 },
                   fontWeight: 800,
-                  color: "white",
-                  mb: 0.5,
+                  mb: 1,
+                  textShadow: "0 2px 10px rgba(0,0,0,.6)",
                 }}
               >
                 {title}
               </Typography>
 
-              {(() => {
-                const timeLine =
-                  (startTime && endTime ? `${startTime} - ${endTime}` : "") +
-                  (eventDateText
-                    ? `${startTime || endTime ? ", " : ""}${eventDateText}`
-                    : "");
-                return (
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <CalendarMonthRounded
-                      fontSize="small"
-                      sx={{ opacity: 0.9 }}
-                    />
-                    <Typography sx={{ fontSize: 14, opacity: 0.95 }}>
-                      {timeLine || "Đang cập nhật thời gian"}
-                    </Typography>
-                  </Stack>
-                );
-              })()}
-
-              <Stack direction="row" spacing={1} alignItems="flex-start">
-                <PlaceRounded
-                  fontSize="small"
-                  sx={{ mt: "1px", opacity: 0.9 }}
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip
+                  icon={<CalendarMonthRounded />}
+                  label={
+                    startDate && endDate
+                      ? `${fmtDate(startDate)} – ${fmtDate(endDate)}`
+                      : fmtDate(startDate) || "Ngày: TBA"
+                  }
+                  sx={{ bgcolor: "rgba(255,255,255,.15)", color: "white" }}
                 />
-                <Box>
-                  <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
-                    {venueName || "Đang cập nhật địa điểm"}
-                  </Typography>
-                  <Typography sx={{ fontSize: 13, opacity: 0.8 }}>
-                    {venueAddress || ""}
-                  </Typography>
-                </Box>
+                <Chip
+                  icon={<AccessTimeRounded />}
+                  label={time ? `Giờ: ${time}` : "Giờ: TBA"}
+                  sx={{ bgcolor: "rgba(255,255,255,.15)", color: "white" }}
+                />
+                {typeof totalSeats === "number" && (
+                  <Chip
+                    icon={<PeopleAltRounded />}
+                    label={`Chỗ ngồi: ${totalSeats}`}
+                    sx={{ bgcolor: "rgba(255,255,255,.15)", color: "white" }}
+                  />
+                )}
               </Stack>
-
-              <Stack direction="row" spacing={1} alignItems="center">
-                <AccessTimeRounded fontSize="small" sx={{ opacity: 0.9 }} />
-                <Typography sx={{ fontSize: 14, opacity: 0.95 }}>
-                  {startTime && endTime
-                    ? `Thời lượng: ${startTime} – ${endTime}`
-                    : "Thời lượng: đang cập nhật"}
-                </Typography>
-              </Stack>
-
-              {(() => {
-                const safeRating = Number.isFinite(rating)
-                  ? Math.max(0, Math.round(rating))
-                  : 0;
-                return (
-                  <Stack direction="row" spacing={0.5} alignItems="center">
-                    {Array.from({ length: Math.min(5, safeRating) }, (_, i) => (
-                      <StarIcon
-                        key={i}
-                        sx={{ color: "#f5d142", fontSize: 18 }}
-                      />
-                    ))}
-                    {/* Nếu muốn luôn hiện chip tồn kho, bỏ điều kiện */}
-                    <Chip
-                      label={`Còn: ${stock ?? 0}`}
-                      size="small"
-                      sx={{
-                        ml: 1,
-                        bgcolor: "rgba(255,255,255,.08)",
-                        color: "white",
-                        height: 22,
-                      }}
-                    />
-                  </Stack>
-                );
-              })()}
-
-              <Box
-                sx={{ height: 1, bgcolor: "rgba(255,255,255,.08)", my: 1 }}
-              />
-
-         
-
-              <Stack direction="row" spacing={1.2} sx={{ mt: 1 }}>
-                <Button
-                  variant="contained"
-                  sx={{
-                    bgcolor: "#22c55e",
-                    color: "#0b2e13",
-                    fontWeight: 800,
-                    px: 2.6,
-                    py: 1.1,
-                    borderRadius: 1.5,
-                    textTransform: "none",
-                    "&:hover": { bgcolor: "#16a34a" },
-                  }}
-                >
-                  Register
-                </Button>
-
-               
-              </Stack>
-
-              {/* mô tả đặt sau nút, tránh che */}
-              {description && (
-                <Typography
-                  sx={{ mt: 1, color: "rgba(255,255,255,.9)", fontSize: 13.5 }}
-                >
-                  {description}
-                </Typography>
-              )}
-            </Box>
-          </Grid>
-
-          {/* RIGHT – poster khống chế chiều cao */}
-          {/* RIGHT – poster full-bleed, ăn hết phần đen */}
-          <Grid
-            item
-            xs={12}
-            md={7}
-            sx={{ bgcolor: "#0c0f12", display: "flex" }}
-          >
-            <Box
-              sx={{
-                position: "relative",
-                flex: 1 /* fill full height of column */,
-              }}
-            >
-              <Box
-                component="img"
-                src={poster}
-                alt={title}
-                sx={{
-                  position: "absolute",
-                  inset: 0, // top/right/bottom/left = 0
-                  width: "100%",
-                  height: "100%", // cao bằng cột phải
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
             </Box>
           </Grid>
         </Grid>
       </Box>
 
-      {/* Giữ các khối phong cách cũ */}
-      <InfoProduct />
+      {/* Toàn bộ thông tin còn lại chuyển xuống InfoProduct qua prop `event` */}
+      <InfoProduct event={event} />
       <LatestPosts />
       <InstagramGallery />
     </>
@@ -312,6 +247,3 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
-
-
-

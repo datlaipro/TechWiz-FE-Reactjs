@@ -60,7 +60,7 @@ export default function AdminEventView() {
     (async () => {
       try {
         // TÙY API của bạn, nếu chi tiết event là /api/admin/events/{id} thì sửa lại:
-        const res = await fetch(`${API_BASE}/api/events/${id}`, { headers: authHeaders });
+        const res = await fetch(`${API_BASE}/api/admin/pending/${id}`, { headers: authHeaders });
         if (!res.ok) throw new Error(`GET event failed: ${res.status}`);
         const data = await res.json();
         setEvent(data);
@@ -74,7 +74,7 @@ export default function AdminEventView() {
 
   const handleApprove = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/adminview/${id}/approve`, {
+      const res = await fetch(`${API_BASE}/api/admin/events/${id}/approve`, {
         method: "POST",
         headers: authHeaders,
       });
@@ -88,7 +88,7 @@ export default function AdminEventView() {
 
   const handleReject = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/events/${id}/reject`, {
+      const res = await fetch(`${API_BASE}/api/organizer/events/${id}/`, {
         method: "POST",
         headers: authHeaders,
       });
