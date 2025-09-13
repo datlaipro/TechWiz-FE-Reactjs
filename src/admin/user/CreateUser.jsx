@@ -25,12 +25,12 @@ function CreateUser() {
   const [user, setUser] = useState({
     fullName: '',
     email: '',
-    phoneNumber: '',
-    address: '',
-    birthDay: '',
-    gender: '',
-    avatar: '',
-    roles: [],
+    phoneNumber: ''||null,
+    address: ''||null,
+    birthDay: ''||null,
+    gender: ''||null,
+    avatar: ''||null,
+    roles: []||null,
     password: '',
   });
   const [confirmPassword, setConfirmPassword] = useState('');

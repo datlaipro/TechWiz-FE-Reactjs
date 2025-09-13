@@ -14,10 +14,9 @@ import {
   Divider,
   LinearProgress,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import {
   FilterAlt,
-  CheckCircle,
-  Cancel,
   CalendarMonthRounded,
   PlaceRounded,
   AccessTimeRounded,
@@ -25,6 +24,8 @@ import {
   PendingActions,
   WarningAmberRounded,
 } from "@mui/icons-material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
 import { DataGrid } from "@mui/x-data-grid";
 
 /* ========================= Component ========================= */
@@ -32,6 +33,9 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : ""); // "2025-09-12"
 const fmtTime = (s) => (s ? String(s).slice(0, 5) : ""); // "08:30"
 const normStatus = (s) => String(s || "").toUpperCase();
 function Dashboard() {
+  const navigate = useNavigate();
+  const handleView = (eventId) => navigate(`/admin/adminview/${eventId}`);
+  const handleEdit = (eventId) => navigate(`/admin/editevent/${eventId}`);
   /* ---------- EVENTS & NEWS (Giai đoạn 1) ---------- */
   const [events, setEvents] = useState([]);
   const [news, setNews] = useState([]);
@@ -282,7 +286,7 @@ function Dashboard() {
         return {
           id: `EVT-${idRaw}`,
           type: "Sự kiện",
-           eventId: idRaw,         // 👈 thêm trường số để gọi API
+          eventId: idRaw, // 👈 thêm trường số để gọi API
           title: e.title || "—",
           // 🔻 đổi từ department/faculty/... sang category
           department: e.category || "—",
@@ -305,14 +309,14 @@ function Dashboard() {
       method: "POST",
       headers: authHeaders, // phải nằm trong object options
     });
-    setQueueRows((prev) => prev.filter((r) =>  r.eventId !== eventId));
+    setQueueRows((prev) => prev.filter((r) => r.eventId !== eventId));
   }; // fake}
   const handleReject = (eventId) => {
     fetch(`http://localhost:6868/api/admin/events/${eventId}/reject`, {
       method: "POST",
       headers: authHeaders, // phải nằm trong object options
     });
-    setQueueRows((prev) => prev.filter((r) =>  r.eventId !== eventId));
+    setQueueRows((prev) => prev.filter((r) => r.eventId !== eventId));
   };
   // ;}
 
@@ -684,28 +688,19 @@ function Dashboard() {
                   {
                     field: "actions",
                     headerName: "Thao tác",
-                    width: 160,
+                    width: 200,
                     sortable: false,
                     renderCell: (p) => (
                       <Stack direction="row" spacing={1}>
                         <Button
                           size="small"
-                          color="success"
                           variant="outlined"
-                          startIcon={<CheckCircle />}
-                          onClick={() => handleApprove(p.row.eventId)}
+                          startIcon={<VisibilityIcon />}
+                          onClick={() => handleView(p.row.eventId)}
                         >
-                          Duyệt
+                          Xem
                         </Button>
-                        <Button
-                          size="small"
-                          color="error"
-                          variant="outlined"
-                          startIcon={<Cancel />}
-                          onClick={() => handleReject(p.row.eventId)}
-                        >
-                          Hủy
-                        </Button>
+                        
                       </Stack>
                     ),
                   },

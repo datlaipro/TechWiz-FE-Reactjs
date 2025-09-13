@@ -27,51 +27,61 @@ const GalleryBook = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    (async () => {
       try {
         const { data } = await axios.get("http://localhost:6868/api/events");
-        if (!Array.isArray(data)) throw new Error("API did not return an array");
+        if (!Array.isArray(data))
+          throw new Error("API did not return an array");
 
         const mapped = data
-          // eventId có thể là số hoặc chuỗi; ép về Number để dùng làm key/link
-          .filter((e) => e?.eventId != null && Number.isFinite(Number(e.eventId)))
+          .filter(
+            (e) => e?.eventId != null && Number.isFinite(Number(e.eventId))
+          )
           .map((e) => ({
-            id: Number(e.eventId), // dùng cho key và link
+            id: Number(e.eventId),
             title: e.title || "Sự kiện",
             description: e.description || "Khám phá chi tiết sự kiện.",
             buttonText: "Xem chi tiết",
-            // BE chưa chắc có ảnh -> thử vài key phổ biến, cuối cùng dùng placeholder
             image:
               e.image ||
               e.banner ||
               e.imagePath ||
               "/demo/images/placeholder.png",
-            // giữ thêm vài field nếu sau này muốn hiển thị
             startDate: e.startDate || e.date || null,
             endDate: e.endDate || null,
             venue: e.venue || "",
             status: e.status || "",
           }));
 
-        setSlides(shuffleArray(mapped).slice(0, 5));
+        // ✅ Khử trùng lặp theo id
+        const deduped = Array.from(
+          new Map(mapped.map((it) => [it.id, it])).values()
+        );
+
+        // (tuỳ chọn) xáo trộn rồi cắt 5 cái đầu
+        const picked = shuffleArray(deduped).slice(0, 5);
+
+        setSlides(picked);
       } catch (e) {
         console.error(e);
         setError("Failed to load slides. Please try again later.");
       }
-    };
-    fetchEvents();
+    })();
   }, []);
 
+  const enough = slides.length > 1; // chỉ loop khi có >1 slide
   const settings = {
     dots: false,
-    infinite: true,
-    autoplay: true,
+    infinite: enough, // ✅
+    autoplay: enough, // ✅
     speed: 200,
     slidesToShow: 1,
     slidesToScroll: 1,
     nextArrow: <NextArrow />,
     prevArrow: <PrevArrow />,
   };
+
+  // ...
 
   if (error) {
     return (
