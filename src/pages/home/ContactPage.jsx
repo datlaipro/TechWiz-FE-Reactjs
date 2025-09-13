@@ -14,7 +14,7 @@ const ContactUs = () => {
             Contact Info
           </Typography>
           <Typography mb={3} variant="h6">
-            Tortor dignissim convallis aenean et tortor at risus viverra adipiscing.
+            Visit our facilities at.
           </Typography>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
@@ -27,7 +27,7 @@ const ContactUs = () => {
                 <Link href="#" sx={{ color: 'inherit', textDecoration: 'none' }}>+123 123 654</Link>
               </Typography>
               <Typography sx={{color: '#677d72' }}>
-                <Link href="#" sx={{ color: 'inherit', textDecoration: 'none' }}>info@bookly.com</Link>
+                <Link href="#" sx={{ color: 'inherit', textDecoration: 'none' }}>info@event.com</Link>
               </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -40,7 +40,7 @@ const ContactUs = () => {
                 <Link href="#" sx={{ color: 'inherit', textDecoration: 'none' }}>+123 123 654</Link>
               </Typography>
               <Typography sx={{color: '#677d72' }}>
-                <Link href="#" sx={{ color: 'inherit', textDecoration: 'none' }}>admin@bookly.com</Link>
+                <Link href="#" sx={{ color: 'inherit', textDecoration: 'none' }}>admin@event.com</Link>
               </Typography>
             </Grid>
           </Grid>
@@ -94,8 +94,8 @@ const ContactUs = () => {
   );
 };
 
-const OurStores = () => {
-  const stores = [
+const EventCenter = () => {
+  const eventss = [
     { country: "VietNam", address: "09 Le Van Huu, Hai Ba Trung, HN", phone: "+123 666 777 88" },
     { country: "USA", address: "730 Glenstone Ave 65802, US", phone: "+123 666 777 88" },
     { country: "France", address: "13 Rue Montmartre 75001, Paris, France", phone: "+123 222 333 44" },
@@ -109,16 +109,16 @@ const OurStores = () => {
         </Grid>
         <Grid item xs={12} md={6}>
           <Typography variant="h4" gutterBottom>
-            Our Stores
+            Our Event Centers
           </Typography>
-          <Typography mb={3}>You can also directly buy products from our stores.</Typography>
+          <Typography mb={3}>You can find out more information at our event centers.</Typography>
           <Grid container spacing={3}>
-            {stores.map((store, index) => (
+            {eventss.map((events, index) => (
               <Grid item xs={12} sm={6} key={index}>
-                <Typography variant="h6">{store.country}</Typography>
-                <Typography>{store.address}</Typography>
+                <Typography variant="h6">{events.country}</Typography>
+                <Typography>{events.address}</Typography>
                 <Typography sx={{ color: '#677d72' }}>
-                  <Link href="#" sx={{ color: 'inherit', textDecoration: 'none' }}>{store.phone}</Link>
+                  <Link href="#" sx={{ color: 'inherit', textDecoration: 'none' }}>{events.phone}</Link>
                 </Typography>
               </Grid>
             ))}
@@ -137,11 +137,10 @@ const ContactPage = () => {
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Contact", href: "/contact" },
-          { label: "Contact" },
         ]}
       />
       <ContactUs />
-      <OurStores />
+      <EventCenter />
       <LatestPosts />
       <InstagramGallery />
     </>

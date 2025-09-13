@@ -6,7 +6,7 @@ import theme from './theme';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./layouts/protected/ProtectedRoute";
 import UserModal from "./layouts/home/header/UserModal";
-import { CartProvider } from './components/action/CartContext';
+// import { CartProvider } from './components/action/CartContext';
 import { AuthProvider, useAuth } from './layouts/protected/AuthContext';
 import AuthNavigation from './layouts/protected/AuthNavigation';
 import { Snackbar, Alert } from '@mui/material';
@@ -18,11 +18,11 @@ import About from "./pages/home/About";
 import ShopPage from "./pages/home/ShopPage";
 import BlogPage from "./pages/home/BlogPage";
 import ContactPage from "./pages/home/ContactPage";
-import SinglePost from "./pages/home/SinglePost";
+// import SinglePost from "./pages/home/SinglePost";
 import ProductDetail from "./components/display/product/ProductDetail";
-import Cart from "./pages/buy/Cart";
-import CheckOut from "./pages/buy/CheckOut";
-import CustomerProfile from "./pages/customer/CustomerProfile";
+// import Cart from "./pages/buy/Cart";
+// import CheckOut from "./pages/buy/CheckOut";
+// import CustomerProfile from "./pages/customer/CustomerProfile";
 
 // Admin Interface
 import LayoutAdmin from "./admin/layout/LayoutAdmin";
@@ -51,8 +51,8 @@ import CreateImportProduct from './admin/import-product/CreateImportProduct';
 import EditImportProduct from './admin/import-product/EditImportProduct';
 import MyAccount from "./layouts/home/header/MyAccount";
 import QrKit from "./admin/layout/QrKit";
-import AdminEventView from "./admin/dashboard/AdminEventView";
 import AdminEventEdit from "./admin/dashboard/AdminEventEdit";
+import AdminEventView from "./admin/dashboard/AdminEventView";
 // Thành phần mới để chứa nội dung của App
 function AppContent() {
   const { snackbar, closeSnackbar } = useAuth();
@@ -71,26 +71,26 @@ function AppContent() {
           <Route path="shop" element={<ShopPage />} />
           <Route path="blog" element={<BlogPage />} />
           <Route path="contact" element={<ContactPage />} />
-          <Route path="singlepost" element={<SinglePost />} />
+          {/* <Route path="singlepost" element={<SinglePost />} /> */}
           <Route path="productdetail/:id" element={<ProductDetail />} />
-          <Route path="cart" element={<Cart />} />
+          {/* <Route path="cart" element={<Cart />} /> */}
           {/* Các route yêu cầu đăng nhập */}
-          <Route
+          {/* <Route
             path="checkout"
             element={
               <ProtectedRoute>
                 <CheckOut />
               </ProtectedRoute>
             }
-          />
-          <Route
+          /> */}
+          {/* <Route
             path="customerprofile"
             element={
               <ProtectedRoute>
                 <CustomerProfile />
               </ProtectedRoute>
             }
-          />
+          /> */}
         </Route>
 
         {/* Các route admin yêu cầu đăng nhập và ROLE_ADMIN */}
@@ -110,7 +110,7 @@ function AppContent() {
           <Route path="addevent" element={<AddProduct />} />
           <Route path="editevent/:id" element={<EditProduct />} />
           <Route path="eventsview/:id" element={<ProductView />} />
-          <Route path="adminview/:id" element={<AdminEventView />} />
+           <Route path="adminview/:id" element={<AdminEventView />} />
           <Route path="editview/:id" element={<AdminEventEdit />} />
           <Route path="order" element={<OrderList />} />
           <Route path="edit-order/:orderId" element={<EditOrder />} />
@@ -152,11 +152,11 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <AuthProvider>
-        <CartProvider>
+        {/* <CartProvider> */}
           <BrowserRouter>
             <AppContent />
           </BrowserRouter>
-        </CartProvider>
+        {/* </CartProvider> */}
       </AuthProvider>
     </ThemeProvider>
   );

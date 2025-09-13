@@ -12,7 +12,7 @@ const ProductSection = () => {
     // FE đang dùng id
     id: e?.eventId ?? e?.id,
     // FE đang dùng image (BE không có -> placeholder)
-    image: e.mainImageUrl  || "/",
+    image: e?.mainImageUrl || e?.banner || e?.imagePath || "/demo/images/placeholder.png",
     // FE dùng title
     title: e?.title || "",
     // FE dùng startDate / endDate

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import CompanyServices from "../../components/display/info/CompanyServices";
+// import CompanyServices from "../../../backup/CompanyServices";
 import LimitedOffer from "../../components/display/free/LimitedOffer";
 import BestSellingItems from "../../components/display/GroupItems/BestSellingItems";
 import ProductSection from "../../components/display/product/ProductSection";
@@ -8,8 +8,6 @@ import CustomerReviewsSlider from "../../components/action/CustomerReviewsSlider
 import LatestPosts from "../../components/display/post/LatestPosts";
 import InstagramGallery from "../../components/display/GroupItems/InstagramGallery";
 import GalleryBook from "../../components/display/GroupItems/GalleryBook";
-
-
 
 
 export default function Home() {

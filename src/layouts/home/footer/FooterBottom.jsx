@@ -80,13 +80,13 @@ const FooterBottom = () => {
               textAlign={{ xs: "center", md: "right" }}
               color="textSecondary"
             >
-              © Copyright 2024 Book Shop. Product demo by{" "}
+              © Copyright 2025 Event Sphere. Product demo by{" "}
               <Link
                 href="#"
                 target="_blank"
                 underline="hover"
               >
-                Group 1 - T2406E
+                TMTD - T2406E
               </Link>
             </Typography>
           </Grid>

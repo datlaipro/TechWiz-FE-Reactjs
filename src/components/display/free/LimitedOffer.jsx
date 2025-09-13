@@ -225,7 +225,7 @@ const LimitedOffer = () => {
             }}
           >
             <Button
-              href="shop.html"
+              href="#"
               variant="contained"
               color="secondary"
               size="large"
@@ -236,7 +236,7 @@ const LimitedOffer = () => {
                 padding: "16px",
               }}
             >
-              Shop Collection
+              View Event Now
             </Button>
           </Box>
         </Grid>

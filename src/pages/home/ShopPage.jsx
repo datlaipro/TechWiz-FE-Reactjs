@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Grid, Container } from '@mui/material';
 import ProductList from '../../components/display/product/ProductList';
-import Sidebar from '../../components/display/free/Sidebar';
+// import Sidebar from '../../../backup/Sidebar';
 import ProductFilter from '../../components/display/free/ProductFilter';
 import BreadcrumbsComponent from '../../components/display/free/BreadcrumbsComponent';
 import CustomerReviewsSlider from '../../components/action/CustomerReviewsSlider';
@@ -27,7 +27,7 @@ const ShopPage = () => {
         title="Shop"
         breadcrumbs={[
           { label: 'Home', href: '/' },
-          { label: 'Shop' },
+          { label: 'Events' },
         ]}
       />
       <Container

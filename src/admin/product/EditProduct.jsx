@@ -49,12 +49,8 @@ function EditProduct() {
     "orientation",
     "sports",
   ];
-  const approvalStatuses = [
-    "APPROVED",
-    "PENDING_APPROVAL",
-    "REJECTED",
-    "DRAFT",
-  ];
+  const statuses = ["APPROVED", "PENDING_APPROVAL", "REJECTED", "DRAFT"];
+
   // ===== Helpers =====
   const toDateInput = (v) => {
     if (!v) return "";
@@ -114,11 +110,7 @@ function EditProduct() {
           venue: data.venue ?? "",
 
           organizerId: userId ?? data.organizerId ?? data.organizer_id ?? "",
-          approvalStatus:
-            data.approvalStatus ??
-            data.approval_status ??
-            data.status ??
-            "PENDING_APPROVAL",
+          status: data.status ?? data.approval_status ?? "PENDING_APPROVAL",
           approvedBy: data.approvedBy ?? data.approved_by ?? "",
           approvedAt: data.approvedAt ?? data.approved_at ?? "",
           totalSeats: data.totalSeats ?? data.total_seats ?? "",
@@ -254,7 +246,7 @@ function EditProduct() {
   }
 
   const statusChip = (() => {
-    const s = String(event?.approvalStatus || "").toUpperCase();
+    const s = String(event?.status || "").toUpperCase();
     if (s === "APPROVED")
       return (
         <Chip
@@ -552,13 +544,13 @@ function EditProduct() {
               <FormControl fullWidth margin="normal" required>
                 <InputLabel sx={labelSx}>Trạng thái duyệt</InputLabel>
                 <Select
-                  name="approvalStatus"
-                  value={event.approvalStatus}
+                  name="status"
+                  value={event.status}
                   onChange={handleChange}
                   sx={selectSx}
                   label="Trạng thái duyệt"
                 >
-                  {approvalStatuses.map((s) => (
+                  {statuses.map((s) => (
                     <MenuItem key={s} value={s}>
                       {s}
                     </MenuItem>

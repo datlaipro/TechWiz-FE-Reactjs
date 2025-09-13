@@ -171,8 +171,8 @@ const GalleryBook = () => {
 
                   <Typography
                     variant="body1"
-                    color="text.secondary"
-                    sx={{ mt: 2, mb: 3, maxWidth: 600 }}
+                    color="lightgrey"
+                    sx={{ mt: 2, mb: 3, maxWidth: 600, fontSize: { xs: "1.25rem", md: "2rem" } }}
                   >
                     {truncateText(slide.description, 50)}
                   </Typography>

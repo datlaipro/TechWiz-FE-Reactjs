@@ -3,8 +3,8 @@ import { Box, Menu, MenuItem, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import UserModal from "./UserModal";
-import WishlistDropdown from "./WishlistDropdown";
-import CartDropdown from "./CartDropdown";
+// import WishlistDropdown from "./WishlistDropdown";
+// import CartDropdown from "./CartDropdown";
 import { useNavigate } from "react-router-dom";
 
 const STORAGE_KEY = "authState_v1";
@@ -119,8 +119,8 @@ useEffect(() => {
         setUser={setUser}
       />
 
-      <WishlistDropdown />
-      <CartDropdown />
+      {/* <WishlistDropdown /> */}
+      {/* <CartDropdown /> */}
     </Box>
   );
 };

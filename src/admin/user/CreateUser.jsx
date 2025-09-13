@@ -14,17 +14,12 @@ import {
   Grid,
 } from '@mui/material';
 import axios from 'axios';
-import readAuth from '../auth/getToken';
+
 // Danh sách vai trò có thể chọn (bỏ Moderator)
 const roleOptions = ['ROLE_ADMIN', 'ROLE_USER'];
 
 function CreateUser() {
   const navigate = useNavigate();
-    const { token, role, userId } = readAuth(); // lấy thêm role, userId
-    const authHeaders = {
-      Accept: "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
 
   // State cho thông tin người dùng
   const [user, setUser] = useState({
@@ -107,8 +102,10 @@ function CreateUser() {
     };
 
     try {
-      const response = await axios.post('hhttp://localhost:6868/api/admin/users ', userData, {
-        headers:authHeaders
+      const response = await axios.post('http://localhost:6868/api/user', userData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       console.log('Tạo người dùng thành công:', response.data);
       setSuccess('Tạo người dùng thành công!');

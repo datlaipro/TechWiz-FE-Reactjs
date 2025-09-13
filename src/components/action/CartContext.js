@@ -1,3 +1,6 @@
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
 // Component Context để quản lý giỏ hàng
 // Cơ chế quản lý trạng thái giỏ hàng (cart state) toàn cục
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -174,3 +177,7 @@ export const CartProvider = ({ children }) => {
 };
 
 export const useCart = () => useContext(CartContext);
+
+
+
+

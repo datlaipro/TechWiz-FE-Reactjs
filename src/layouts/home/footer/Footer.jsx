@@ -13,12 +13,12 @@ const Footer = () => {
             {/* <Box> */}
             <Box sx={{ textAlign: 'left' }}> {/* Căn lề trái */}
               <img
-                src="/demo/images/main-logo.png"
+                src="https://pub-3d10e52fdf5d49fba5f48198b8864aa8.r2.dev/post/TECHWIZ%20LOGO.png"
                 alt="logo"
                 style={{ width: "150px", marginBottom: "16px" }}
               />
               <Typography variant="body1" color="textSecondary" sx={{ mb: 2 }}>
-              Global distribution system using AI and Blockchain technology. Ensuring copyright for authors and publishers.
+              Event information system applying AI and Blockchain technology. Ensuring perfect operation.
               </Typography>
               <SocialLinks />
             </Box>
@@ -29,7 +29,7 @@ const Footer = () => {
               items={[
                 { label: "Home", link: "#" },
                 { label: "About", link: "#" },
-                { label: "Shop", link: "#" },
+                { label: "Event", link: "#" },
                 { label: "Blogs", link: "#" },
                 { label: "Contact", link: "#" },
               ]}
@@ -39,9 +39,9 @@ const Footer = () => {
             <FooterColumn
               title="Help & Info"
               items={[
-                { label: "Track Your Order", link: "#" },
-                { label: "Returns Policies", link: "#" },
-                { label: "Shipping + Delivery", link: "#" },
+                { label: "Track Your Event", link: "#" },
+                { label: "Policies", link: "#" },
+                { label: "Responsibilities", link: "#" },
                 { label: "Contact Us", link: "#" },
                 { label: "FAQs", link: "#" },
               ]}
@@ -54,8 +54,8 @@ const Footer = () => {
                 <Box>
                   <Typography variant="body2" color="textSecondary">
                     Do you have any queries or suggestions?{" "}
-                    <Link href="mailto:info@bookly.com" underline="none" color="textPrimary">
-                      info@bookly.com
+                    <Link href="mailto:info@event.com" underline="none" color="textPrimary">
+                      info@event.com
                     </Link>
                   </Typography>
                   <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>

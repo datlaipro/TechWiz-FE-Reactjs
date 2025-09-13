@@ -18,7 +18,7 @@ const LatestPosts = () => {
   // ===== Demo events (hard-code) =====
   const events = [
     {
-      image: "/demo/events/orientation.jpg",
+      image: "https://picsum.photos/id/1003/1200/800",
       category: "Orientation", // type
       department: "Phòng Công tác SV",
       title: "Tuần lễ Định hướng Tân sinh viên 2025",
@@ -31,7 +31,7 @@ const LatestPosts = () => {
       categoryLink: "/events?type=orientation",
     },
     {
-      image: "/demo/events/ai-seminar.jpg",
+      image: "https://picsum.photos/id/1003/1200/800",
       category: "Seminar",
       department: "Khoa CNTT",
       title: "Seminar: Ứng dụng AI trong Giáo dục",
@@ -44,57 +44,57 @@ const LatestPosts = () => {
       categoryLink: "/events?type=seminar",
     },
     {
-      image: "/demo/events/football-cup.jpg",
-      category: "Competition",
-      department: "Trung tâm Thể thao",
-      title: "University Football Cup 2025",
+      image: "https://picsum.photos/id/1003/1200/800",
+      category: "Orientation", // type
+      department: "Phòng Công tác SV",
+      title: "Tuần lễ Định hướng Tân sinh viên 2025",
       description:
-        "Giải bóng đá nam nữ toàn trường – vòng loại & chung kết trực tiếp.",
-      date: "2025-09-22",
-      time: "17:00–20:30",
-      location: "Sân vận động B",
-      postLink: "/events/university-football-cup-2025",
-      categoryLink: "/events?type=competition",
+        "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
+      date: "2025-09-15",
+      time: "08:00–16:30",
+      location: "Hội trường A1",
+      postLink: "/events/orientation-2025",
+      categoryLink: "/events?type=orientation",
     },
     {
-      image: "/demo/events/hackathon.jpg",
-      category: "Hackathon",
-      department: "Khoa CNTT",
-      title: "Hackathon: Smart Campus",
+      image: "https://picsum.photos/id/1003/1200/800",
+      category: "Orientation", // type
+      department: "Phòng Công tác SV",
+      title: "Tuần lễ Định hướng Tân sinh viên 2025",
       description:
-        "48h xây prototype giải quyết bài toán SmartParking, SmartCard, E-Queue.",
-      date: "2025-10-01",
-      time: "08:00–08:00 (+2 ngày)",
-      location: "Innovation Lab",
-      postLink: "/events/hackathon-smart-campus",
-      categoryLink: "/events?type=hackathon",
+        "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
+      date: "2025-09-15",
+      time: "08:00–16:30",
+      location: "Hội trường A1",
+      postLink: "/events/orientation-2025",
+      categoryLink: "/events?type=orientation",
     },
-    {
-      image: "/demo/events/blood-donation.jpg",
-      category: "Volunteer",
-      department: "Đoàn – Hội",
-      title: "Hiến máu nhân đạo – Giọt hồng Tri ân",
-      description:
-        "Chương trình thiện nguyện thường niên, mỗi giọt máu cho đi – một cuộc đời ở lại.",
-      date: "2025-09-28",
-      time: "07:30–11:30",
-      location: "Nhà thi đấu Đa năng",
-      postLink: "/events/blood-donation-2025",
-      categoryLink: "/events?type=volunteer",
-    },
-    {
-      image: "/demo/events/career-fair.jpg",
-      category: "Career Fair",
-      department: "Trung tâm Việc làm",
-      title: "Career Fair 2025: 60+ Doanh nghiệp",
-      description:
-        "Phỏng vấn trực tiếp, workshop CV/LinkedIn, góc ảnh CV headshot miễn phí.",
-      date: "2025-10-05",
-      time: "08:30–16:00",
-      location: "Sảnh Nhà E",
-      postLink: "/events/career-fair-2025",
-      categoryLink: "/events?type=career",
-    },
+    // {
+    //   image: "https://picsum.photos/id/1003/1200/800",
+    //   category: "Orientation", // type
+    //   department: "Phòng Công tác SV",
+    //   title: "Tuần lễ Định hướng Tân sinh viên 2025",
+    //   description:
+    //     "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
+    //   date: "2025-09-15",
+    //   time: "08:00–16:30",
+    //   location: "Hội trường A1",
+    //   postLink: "/events/orientation-2025",
+    //   categoryLink: "/events?type=orientation",
+    // },
+    // {
+    //   image: "https://picsum.photos/id/1003/1200/800",
+    //   category: "Orientation", // type
+    //   department: "Phòng Công tác SV",
+    //   title: "Tuần lễ Định hướng Tân sinh viên 2025",
+    //   description:
+    //     "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
+    //   date: "2025-09-15",
+    //   time: "08:00–16:30",
+    //   location: "Hội trường A1",
+    //   postLink: "/events/orientation-2025",
+    //   categoryLink: "/events?type=orientation",
+    // },
   ];
 
   // ===== Filters =====

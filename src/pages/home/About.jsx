@@ -18,7 +18,7 @@ const About = () => {
         title="Giới thiệu"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Giới thiệu" },
+          { label: "About Us" },
         ]}
       />
 

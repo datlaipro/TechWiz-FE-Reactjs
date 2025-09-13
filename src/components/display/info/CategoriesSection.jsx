@@ -31,37 +31,37 @@ export default function EventCategoriesSection() {
     {
       key: "technical",
       title: "Technical",
-      image: "/demo/images/cat-technical.jpg",
+      image: "https://picsum.photos/id/1003/1200/800",
       link: "/events?category=technical",
     },
     {
       key: "cultural",
       title: "Cultural & Arts",
-      image: "/demo/images/cat-cultural.jpg",
+      image: "https://picsum.photos/id/1003/1200/800",
       link: "/events?category=cultural",
     },
     {
       key: "sports",
       title: "Sports",
-      image: "/demo/images/cat-sports.jpg",
+      image: "https://picsum.photos/id/1003/1200/800",
       link: "/events?category=sports",
     },
     {
       key: "academic",
       title: "Academic & Seminar",
-      image: "/demo/images/cat-academic.jpg",
+      image: "https://picsum.photos/id/1003/1200/800",
       link: "/events?category=academic",
     },
     {
       key: "clubs",
       title: "Clubs & Societies",
-      image: "/demo/images/cat-clubs.jpg",
+      image: "https://picsum.photos/id/1003/1200/800",
       link: "/events?category=clubs",
     },
     {
       key: "admissions",
       title: "Admissions & Orientation",
-      image: "/demo/images/cat-admissions.jpg",
+      image: "https://picsum.photos/id/1003/1200/800",
       link: "/events?category=admissions",
     },
   ];

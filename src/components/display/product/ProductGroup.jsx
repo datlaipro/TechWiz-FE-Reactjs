@@ -13,60 +13,14 @@ import {
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import PlaceIcon from "@mui/icons-material/Place";
 import { useNavigate } from "react-router-dom";
-
-// Parse "YYYY-MM-DD" + "HH:mm:ss" thành Date (local)
-function buildLocalDate(dateStr, timeStr) {
-  if (!dateStr) return null;
+// import MiniProductCard from "./MiniProductCard";
+function fmtRange(startDate, endDate) {
   try {
-    const [y, m, d] = dateStr.split("-").map(Number);
-    let hh = 0,
-      mm = 0,
-      ss = 0;
-    if (timeStr) {
-      const parts = timeStr.split(":").map(Number);
-      hh = parts[0] ?? 0;
-      mm = parts[1] ?? 0;
-      ss = parts[2] ?? 0;
-    }
-    return new Date(y, (m || 1) - 1, d || 1, hh, mm, ss);
-  } catch {
-    return null;
-  }
-}
-// --- Helpers (dùng cùng file ProductGroup) ---
-// Parse "YYYY-MM-DD" + "HH:mm:ss" thành Date (local)
-
-// Lấy mốc "kết thúc" thực tế của event
-function getEventEnd(ev) {
-  const start = buildLocalDate(ev?.startDate || ev?.date, ev?.time) || null;
-
-  // Nếu có endDate/endTime -> dùng chúng (fallback endTime = 23:59:59 nếu chỉ có endDate)
-  if (ev?.endDate || ev?.endTime) {
-    const endDateStr = ev?.endDate || ev?.startDate || ev?.date;
-    const endTimeStr = ev?.endTime || (ev?.endDate ? "23:59:59" : ev?.time);
-    return buildLocalDate(endDateStr, endTimeStr) || start;
-  }
-
-  // Nếu chỉ có date (không có time) -> coi kết thúc cuối ngày đó
-  if (ev?.date && !ev?.time) {
-    return buildLocalDate(ev.date, "23:59:59") || start;
-  }
-
-  // Nếu có start + time nhưng không có end -> coi như kết thúc tại thời điểm bắt đầu
-  return start;
-}
-
-// Đã kết thúc chưa?
-function isEventOver(ev, now = new Date()) {
-  const end = getEventEnd(ev);
-  if (!end) return false;
-  return now.getTime() > end.getTime();
-}
-
-function fmtRangeByDates(s, e) {
-  try {
+    const s = startDate ? new Date(startDate) : null;
+    const e = endDate ? new Date(endDate) : null;
     if (!s) return "";
     const dOpt = { dateStyle: "medium", timeStyle: "short" };
+
     if (!e) return `Bắt đầu: ${s.toLocaleString("vi-VN", dOpt)}`;
 
     const sameDay =
@@ -89,7 +43,14 @@ function fmtRangeByDates(s, e) {
 
 const ProductGroup = ({ title, products = [] }) => {
   const navigate = useNavigate();
-
+  // const handleNavigate = () => { // Chuyển hướng đến URL động với id
+  //   if (key) {
+  //     navigate(`/productdetail/${key}`);
+  //   } else {
+  //     console.warn("Product ID is missing");
+  //     navigate('/productdetail'); // Hoặc xử lý lỗi khác
+  //   }
+  // };
   return (
     <Box
       sx={{
@@ -108,36 +69,10 @@ const ProductGroup = ({ title, products = [] }) => {
 
       <Stack spacing={2}>
         {products.map((ev, idx) => {
-          const id = ev?.id ?? ev?.eventId ?? idx;
-          const titleText = ev?.title || ev?.name || "Untitled";
-          const imgSrc =
-            ev?.mainImageUrl ||
-            ev?.image ||
-            ev?.img ||
-            ev?.images?.[0]?.imagePath ||
-            ""; // có thể thêm placeholder nếu muốn
-
-          // Ưu tiên startDate/time; nếu không có thì dùng date/time
-          const start =
-            buildLocalDate(ev?.startDate, ev?.time) ||
-            buildLocalDate(ev?.date, ev?.time) ||
-            null;
-
-          // Nếu BE có endTime thì dùng; nếu không có thì chỉ hiển thị bắt đầu
-          const end =
-            buildLocalDate(ev?.endDate, ev?.endTime) ||
-            (ev?.endDate ? buildLocalDate(ev?.endDate) : null);
-
-          const whenText = fmtRangeByDates(start, end);
-          const whereText = ev?.location || ev?.venue || ev?.address || "";
-          const over = isEventOver(ev);
-          const detailPath =
-            ev?.link || `/productdetail/${ev?.id ?? ev?.eventId ?? ""}`;
-          const canVisit = !!detailPath && !over;
-
+          const key = ev?.id ?? idx;
           return (
             <Card
-              key={id}
+              key={key}
               variant="outlined"
               sx={{
                 borderRadius: 3,
@@ -146,18 +81,14 @@ const ProductGroup = ({ title, products = [] }) => {
                 transition: "all .2s ease",
               }}
             >
-              {imgSrc ? (
+              {ev?.image && (
                 <CardMedia
                   component="img"
-                  image={imgSrc}
-                  alt={titleText}
+                  image={ev.image}
+                  alt={ev.title || ev.name}
                   sx={{ height: 160, objectFit: "cover" }}
-                  onError={(e) => {
-                    // fallback nếu ảnh lỗi
-                    e.currentTarget.src = "/demo/images/placeholder.png";
-                  }}
                 />
-              ) : null}
+              )}
 
               <CardContent sx={{ p: 2 }}>
                 <Typography
@@ -169,12 +100,13 @@ const ProductGroup = ({ title, products = [] }) => {
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
                   }}
-                  title={titleText}
+                  title={ev.title || ev.name}
                 >
-                  {titleText}
+                  {ev.title || ev.name}
                 </Typography>
 
-                {whenText && (
+                {/* Ngày/giờ sự kiện */}
+                {(ev?.startDate || ev?.endDate) && (
                   <Stack
                     direction="row"
                     spacing={1}
@@ -182,11 +114,14 @@ const ProductGroup = ({ title, products = [] }) => {
                     sx={{ mt: 1 }}
                   >
                     <CalendarMonthIcon fontSize="small" />
-                    <Typography variant="body2">{whenText}</Typography>
+                    <Typography variant="body2">
+                      {fmtRange(ev.startDate, ev.endDate)}
+                    </Typography>
                   </Stack>
                 )}
 
-                {whereText && (
+                {/* Địa điểm (nếu có) */}
+                {ev?.location && (
                   <Stack
                     direction="row"
                     spacing={1}
@@ -194,19 +129,31 @@ const ProductGroup = ({ title, products = [] }) => {
                     sx={{ mt: 0.5 }}
                   >
                     <PlaceIcon fontSize="small" />
-                    <Typography variant="body2">{whereText}</Typography>
+                    <Typography variant="body2">{ev.location}</Typography>
+                 
                   </Stack>
                 )}
 
+                {/* Hành động */}
                 <Stack direction="row" spacing={1.5} sx={{ mt: 1.5 }}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    disabled={!canVisit}
-                    onClick={() => canVisit && navigate(detailPath)}
-                  >
-                    {over ? "Đã kết thúc" : "Visit Now"}
-                  </Button>
+                  {ev.link ?(
+                    <Button
+                      size="small"
+                      variant="contained"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => navigate(ev.link)}
+                    >
+                       Visit Now
+                    </Button>
+                  ) : (
+                    <Button size="small" variant="outlined" disabled>
+                      Registration is about to open
+                    </Button>
+                  )}
+                  {/* Nếu cần:
+                  <Button size="small" variant="text">Chi tiết</Button>
+                  */}
                 </Stack>
               </CardContent>
             </Card>

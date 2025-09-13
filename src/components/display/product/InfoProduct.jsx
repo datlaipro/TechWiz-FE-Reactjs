@@ -1,8 +1,10 @@
 import React from "react";
 import {
   Container, Box, Grid, Typography, Button, Chip, List, ListItem, ListItemIcon,
-  ListItemText, Link as MuiLink
+  ListItemText, Paper, Link as MuiLink
 } from "@mui/material";
+import EventIcon from "@mui/icons-material/Event";
+import AccessTimeRounded from "@mui/icons-material/AccessTimeRounded";
 import PlaceRounded from "@mui/icons-material/PlaceRounded";
 import QueueMusicRounded from "@mui/icons-material/QueueMusicRounded";
 import RuleRounded from "@mui/icons-material/RuleRounded";
@@ -13,49 +15,49 @@ import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
 const ACCENT = "#F86D72";
 
 const InfoProduct = ({ event }) => {
-  // ==== Lấy dữ liệu từ ProductDetail (có fallback nhẹ) ====
-  const title         = event?.title ?? "Sự kiện";
-  const description   = event?.description?.trim() || "Thông tin chi tiết sẽ được cập nhật.";
-  const venueName     = event?.venueName || "Địa điểm sẽ cập nhật";
-  const venueAddress  = event?.venueAddress || "";
-  const category      = event?.category || null;
-  const status        = event?.status || null;
+  // dữ liệu có thể truyền từ ProductDetail, nếu thiếu dùng fallback
+  const title = event?.title || "Your Event Title";
+  const dateText =
+    event?.eventDateText ||
+    (event?.startTime && event?.endTime ? `${event.startTime} – ${event.endTime}` : "TBA");
+  const venueName = event?.venueName || "Main Hall / Arena";
+  const venueAddress = event?.venueAddress || "123 Example St, City, Country";
+  const priceFrom = event?.priceFrom ?? event?.price ?? 150000;
 
-  // Nếu có lineup/rules/faqs từ BE thì dùng, không thì fallback demo
-  const lineup = Array.isArray(event?.lineup) && event.lineup.length
-    ? event.lineup
-    : [
-        { time: "18:30", act: "Mở cổng · Check-in" },
-        { time: "19:30", act: "Tiết mục mở màn" },
-        { time: "20:15", act: "Chương trình chính" },
-        { time: "21:00", act: "Gala/Headliner" },
-      ];
+  const lineup = event?.lineup || [
+    { time: "18:30", act: "Mở cổng · Check-in" },
+    { time: "19:30", act: "Artist A" },
+    { time: "20:15", act: "Artist B" },
+    { time: "21:00", act: "Headliner" },
+    { time: "22:30", act: "Encore & Goodbye" },
+  ];
 
-  const rules = Array.isArray(event?.rules) && event.rules.length
-    ? event.rules
-    : [
-        "Tuân thủ hướng dẫn của BTC và an ninh.",
-        "Không mang vật nguy hiểm, hạn chế balo lớn.",
-        "Giữ gìn vệ sinh, không xả rác.",
-      ];
+  const rules = event?.rules || [
+    "Không mang đồ uống có cồn từ bên ngoài.",
+    "Hạn chế balo lớn; kiểm tra an ninh tại cổng.",
+    "Không dùng flycam/professional camera khi chưa có phép.",
+    "Giữ khoảng cách an toàn, tuân thủ hướng dẫn BTC.",
+  ];
 
-  const faqs = Array.isArray(event?.faqs) && event.faqs.length
-    ? event.faqs
-    : [
-        { q: "Vé có hoàn/đổi được không?", a: "Không hoàn/đổi trừ khi sự kiện hủy/hoãn." },
-        { q: "Có bãi đỗ xe không?", a: "Có bãi đỗ trong/ngoài khuôn viên (có thể thu phí)." },
-      ];
+  const faqs = event?.faqs || [
+    { q: "Vé có hoàn/đổi được không?", a: "Không hoàn/đổi sau khi thanh toán, trừ trường hợp sự kiện hủy/hoãn." },
+    { q: "Trẻ em có vào cửa được không?", a: "Có, đi kèm người lớn; một số khu vực có giới hạn độ tuổi." },
+    { q: "Có bãi đỗ xe không?", a: "Có bãi đỗ thu phí theo giờ ngay trong khuôn viên/đối diện cổng." },
+  ];
 
-  const mapEmbedUrl = venueAddress
-    ? `https://www.google.com/maps?q=${encodeURIComponent(venueAddress)}&output=embed`
-    : `https://www.google.com/maps?q=${encodeURIComponent(venueName)}&output=embed`;
+  const mapEmbedUrl = event?.mapEmbedUrl
+    ? event.mapEmbedUrl
+    : `https://www.google.com/maps?q=${encodeURIComponent(venueAddress)}&output=embed`;
+
+  const fmtVND = (n) =>
+    typeof n === "number" ? new Intl.NumberFormat("vi-VN").format(n) + " đ" : n;
 
   const go = (id) =>
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
     <Container sx={{ mt: 4 }}>
-      {/* NAV mục lục */}
+      {/* NAV mục lục kiểu sự kiện */}
       <Box
         sx={{
           display: "flex",
@@ -92,49 +94,27 @@ const InfoProduct = ({ event }) => {
           {/* OVERVIEW */}
           <Section id="overview" title="Tổng quan">
             <Typography variant="h6" sx={{ mb: 1 }}>
-              {title}
+              {title} – Đêm nhạc bùng nổ cảm xúc!
             </Typography>
-
-            {/* Nếu có category/status thì hiển thị nhẹ dưới tiêu đề */}
-            {(category || status) && (
-              <Box sx={{ mb: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
-                {category && (
-                  <Chip
-                    label={`Phân loại: ${category}`}
-                    size="small"
-                    sx={{ bgcolor: `${ACCENT}22` }}
-                  />
-                )}
-                {status && (
-                  <Chip
-                    label={`Trạng thái: ${status}`}
-                    size="small"
-                    sx={{ bgcolor: "rgba(255,255,255,.08)" }}
-                  />
-                )}
-              </Box>
-            )}
-
             <Typography sx={{ lineHeight: 1.9, fontSize: 18, mb: 2 }}>
-              {description}
+              Sự kiện quy tụ nhiều nghệ sĩ nổi tiếng, âm thanh – ánh sáng tiêu chuẩn, hứa hẹn mang lại
+              trải nghiệm “cháy” hết mình. Cửa mở sớm để bạn check-in, săn ảnh và nhận quà mini-game
+              khu vực lobby.
             </Typography>
 
-            {/* Gạch đầu dòng mô tả thêm (không lặp lại date/time/totalSeats đã ở poster) */}
             <List dense sx={{ pl: 1 }}>
               {[
-                category ? `Chủ đề/nhóm sự kiện: ${category}` : null,
-                "Hỗ trợ an ninh & y tế trong suốt sự kiện.",
-                "Khu vực refreshment/đồ uống trong khuôn viên.",
-              ]
-                .filter(Boolean)
-                .map((t, i) => (
-                  <ListItem key={i} disableGutters>
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <ChevronRightRounded />
-                    </ListItemIcon>
-                    <ListItemText primaryTypographyProps={{ fontSize: 18 }} primary={t} />
-                  </ListItem>
-                ))}
+                "Sân khấu lớn, màn hình LED.",
+                "An ninh & y tế trực 24/7.",
+                "Quầy đồ ăn – nước uống trong khuôn viên.",
+              ].map((t, i) => (
+                <ListItem key={i} disableGutters>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <ChevronRightRounded />
+                  </ListItemIcon>
+                  <ListItemText primaryTypographyProps={{ fontSize: 18 }} primary={t} />
+                </ListItem>
+              ))}
             </List>
           </Section>
 
@@ -151,7 +131,7 @@ const InfoProduct = ({ event }) => {
               ))}
             </List>
             <Typography sx={{ mt: 1.5, color: "text.secondary" }}>
-              *Lịch trình có thể thay đổi vì lý do kỹ thuật/thời tiết.
+              *Lịch trình có thể thay đổi nhẹ vì lý do kỹ thuật / thời tiết.
             </Typography>
           </Section>
 
@@ -168,20 +148,18 @@ const InfoProduct = ({ event }) => {
               loading="lazy"
               sx={{ border: 0, width: "100%", height: 320, borderRadius: 2, mb: 1.5 }}
             />
-            {(venueName || venueAddress) && (
-              <MuiLink
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                  venueAddress || venueName
-                )}`}
-                target="_blank"
-                rel="noopener"
-                underline="none"
-              >
-                <Button startIcon={<DirectionsRounded />} variant="outlined">
-                  Chỉ đường bằng Google Maps
-                </Button>
-              </MuiLink>
-            )}
+            <MuiLink
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                venueAddress
+              )}`}
+              target="_blank"
+              rel="noopener"
+              underline="none"
+            >
+              <Button startIcon={<DirectionsRounded />} variant="outlined">
+                Chỉ đường bằng Google Maps
+              </Button>
+            </MuiLink>
           </Section>
 
           {/* RULES */}
@@ -213,7 +191,8 @@ const InfoProduct = ({ event }) => {
           </Section>
         </Grid>
 
-        {/* RIGHT SIDEBAR – giữ nguyên layout (để trống hoặc bạn thêm card sticky sau) */}
+        {/* RIGHT SIDEBAR – event card sticky */}
+        
       </Grid>
     </Container>
   );

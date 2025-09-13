@@ -66,7 +66,7 @@ const ProductCardWrapper = styled('div')({
   justifyContent: 'center',
   alignItems: 'center',
   flexDirection: 'column',
-  maxWidth: '220px',
+  maxWidth: '320px',
   height: 'auto',
 });
 

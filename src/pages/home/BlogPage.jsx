@@ -11,7 +11,7 @@ const BlogPage = () => {
   // ===== Dữ liệu mẫu cho "Bản tin sự kiện" =====
   const posts = [
     {
-      image: "/demo/events/ai-seminar.jpg",
+      image: "https://assets-global.website-files.com/605baba32d94435376625d33/6514274edaff1d5c70319e8f_64dcd9b38b33dd95c766b3dd_work-social-events.jpeg",
       category: "Thông báo",
       department: "Khoa CNTT",
       title: "Mở đăng ký Seminar: Ứng dụng AI trong Giáo dục",
@@ -21,7 +21,7 @@ const BlogPage = () => {
       categoryLink: "/news?type=announce",
     },
     {
-      image: "/demo/events/career-fair.jpg",
+      image: "https://valterlongo.com/wp-content/uploads/2019/03/coffee-break.jpg",
       category: "Điểm tin",
       department: "Trung tâm Việc làm",
       title: "Career Fair 2025: 60+ doanh nghiệp xác nhận tham dự",
@@ -31,7 +31,7 @@ const BlogPage = () => {
       categoryLink: "/news?type=news",
     },
     {
-      image: "/demo/events/hackathon.jpg",
+      image: "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/teamwork-marketing-presentation-or-business-man-planning-collaboration-or-working-on-strategy-co-768x383.jpg",
       category: "Hướng dẫn",
       department: "Khoa CNTT",
       title: "Cẩm nang tham gia Hackathon: Smart Campus",
@@ -41,7 +41,7 @@ const BlogPage = () => {
       categoryLink: "/news?type=guide",
     },
     {
-      image: "/demo/events/football-cup.jpg",
+      image: "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/brazilian-lady-showing-chart-giving-training-using-laptop-and-monitor-tv-in-indoors-classroom.jpg",
       category: "Thông báo",
       department: "Trung tâm Thể thao",
       title: "Lịch thi đấu University Football Cup 2025",
@@ -51,7 +51,7 @@ const BlogPage = () => {
       categoryLink: "/news?type=announce",
     },
     {
-      image: "/demo/events/orientation.jpg",
+      image: "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/social-media-network-diagram-1536x1028.jpg",
       category: "Recap",
       department: "Phòng Công tác SV",
       title: "Recap Tuần lễ Định hướng Tân sinh viên",
@@ -61,7 +61,7 @@ const BlogPage = () => {
       categoryLink: "/news?type=recap",
     },
     {
-      image: "/demo/events/blood-donation.jpg",
+      image: "https://matchboxdesigngroup.com/wp-content/uploads/2025/08/UXUI-blog-cover.png",
       category: "Thông báo",
       department: "Đoàn – Hội",
       title: "Hiến máu nhân đạo: Giọt hồng Tri ân",
@@ -71,7 +71,7 @@ const BlogPage = () => {
       categoryLink: "/news?type=announce",
     },
     {
-      image: "/demo/events/seminar-cyber.jpg",
+      image: "https://matchboxdesigngroup.com/wp-content/uploads/2025/05/word-image-29645-1.jpeg",
       category: "Điểm tin",
       department: "Khoa An toàn thông tin",
       title: "Điểm tin: Chuỗi seminar An toàn thông tin tháng 9",
@@ -81,7 +81,7 @@ const BlogPage = () => {
       categoryLink: "/news?type=news",
     },
     {
-      image: "/demo/events/volunteer.jpg",
+      image: "https://matchboxdesigngroup.com/wp-content/uploads/2025/07/Data-First-Bank-Marketing-Matchbox-Design-Group.jpg",
       category: "Hướng dẫn",
       department: "Đoàn – Hội",
       title: "Hướng dẫn đăng ký tình nguyện viên sự kiện lớn",
@@ -125,7 +125,7 @@ const BlogPage = () => {
         title="Bản tin sự kiện"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Bản tin" },
+          { label: "Blog" },
         ]}
       />
 
