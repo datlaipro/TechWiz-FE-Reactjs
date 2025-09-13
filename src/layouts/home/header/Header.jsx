@@ -75,7 +75,7 @@ const Navigate = useNavigate();
               <CustomButton component={Link} to="/about" uppercase>
                 About
               </CustomButton>
-              <CustomButton component={Link} to="/shop" uppercase>
+              <CustomButton component={Link} to="/allevent" uppercase>
                 All Event
               </CustomButton>
               <CustomButton component={Link} to="/blog" uppercase>
@@ -154,7 +154,7 @@ const Navigate = useNavigate();
             </CustomButton>
             <CustomButton
               component={Link}
-              to="/shop"
+              to="/allevent"
               sx={{
                 backgroundColor: "blue",
                 borderRadius: "8px",
@@ -163,7 +163,7 @@ const Navigate = useNavigate();
                 py: 2,
               }}
             >
-              Shop
+              All Event
             </CustomButton>
             <CustomButton
               component={Link}
@@ -200,104 +200,3 @@ const Navigate = useNavigate();
 
 export default Header;
 
-// import React, { useContext } from "react";
-// import { Link } from "react-router-dom";
-// import {
-//   AppBar,
-//   Toolbar,
-//   Button,
-//   Container,
-//   Box,
-//   useMediaQuery,
-//   Drawer,
-//   IconButton,
-// } from "@mui/material";
-// import MenuIcon from "@mui/icons-material/Menu";
-// import CloseIcon from "@mui/icons-material/Close";
-// import { styled } from "@mui/material/styles";
-// import UserItems from "./UserItems";
-// import { AuthContext } from "../../protected/AuthContext";
-
-// const Logo = styled("img")({
-//   height: "50px",
-// });
-
-// const CustomButton = styled(Button)(({ uppercase }) => ({
-//   textTransform: uppercase ? "uppercase" : "none",
-//   margin: "0 10px",
-//   fontSize: "18px",
-//   color: "#272727",
-//   "&:hover": {
-//     color: "#F86D72",
-//   },
-// }));
-
-// const Header = () => {
-//   const { isAuthenticated, setIsAuthenticated, setShowLoginModal } = useContext(AuthContext);
-//   const [drawerOpen, setDrawerOpen] = React.useState(false);
-//   const isMobile = useMediaQuery("(max-width:800px)");
-
-//   const toggleDrawer = (open) => () => {
-//     setDrawerOpen(open);
-//   };
-
-//   return (
-//     <>
-//       <AppBar position="static" sx={{ backgroundColor: "#fff", boxShadow: "none", padding: '5px 0', color: "#272727" }}>
-//         <Toolbar>
-//           <Logo src="/demo/images/main-logo.png" alt="Logo" />
-//           {!isMobile && (
-//             <Box sx={{ flexGrow: 1, textAlign: "center" }}>
-//               <CustomButton component={Link} to="/" uppercase>Home</CustomButton>
-//               <CustomButton component={Link} to="/about" uppercase>About</CustomButton>
-//               <CustomButton component={Link} to="/shop" uppercase>Shop</CustomButton>
-//               <CustomButton component={Link} to="/blog" uppercase>Blogs</CustomButton>
-//               <CustomButton component={Link} to="/contact" uppercase>Contact</CustomButton>
-//             </Box>
-//           )}
-//           {!isMobile && (
-//             <UserItems />
-//           )}
-//           {isMobile && (
-//             <>
-//               <IconButton onClick={toggleDrawer(true)}>
-//                 <MenuIcon sx={{ marginLeft: '20px' }} />
-//               </IconButton>
-//               <Box sx={{ position: 'absolute', right: 30, display: 'flex', alignItems: 'center' }}>
-//                 <UserItems />
-//               </Box>
-//             </>
-//           )}
-//         </Toolbar>
-//       </AppBar>
-//       <Drawer anchor="top" open={drawerOpen} onClose={toggleDrawer(false)}>
-//         <Box
-//           sx={{ width: '100%', p: 2 }}
-//           role="presentation"
-//           onClick={toggleDrawer(false)}
-//           onKeyDown={toggleDrawer(false)}
-//         >
-//           <IconButton sx={{ mb: 2 }}>
-//             <CloseIcon />
-//           </IconButton>
-//           <Box sx={{
-//             display: 'grid',
-//             gridTemplateColumns: 'repeat(2, 1fr)',
-//             gap: 2,
-//             justifyItems: 'center',
-//             alignItems: 'center',
-//             mt: 2,
-//           }}>
-//             <CustomButton component={Link} to="/" sx={{ backgroundColor: 'blue', borderRadius: '8px', color: 'red', width: '150px', py: 2 }}>Home</CustomButton>
-//             <CustomButton component={Link} to="/about" sx={{ backgroundColor: 'blue', borderRadius: '8px', color: 'red', width: '150px', py: 2 }}>About</CustomButton>
-//             <CustomButton component={Link} to="/shop" sx={{ backgroundColor: 'blue', borderRadius: '8px', color: 'red', width: '150px', py: 2 }}>Shop</CustomButton>
-//             <CustomButton component={Link} to="/blog" sx={{ backgroundColor: 'blue', borderRadius: '8px', color: 'red', width: '150px', py: 2 }}>Blogs</CustomButton>
-//             <CustomButton component={Link} to="/contact" sx={{ backgroundColor: 'blue', borderRadius: '8px', color: 'red', width: '150px', py: 2 }}>Contact</CustomButton>
-//           </Box>
-//         </Box>
-//       </Drawer>
-//     </>
-//   );
-// };
-
-// export default Header;

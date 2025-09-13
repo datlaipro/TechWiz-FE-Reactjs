@@ -16,10 +16,7 @@ const About = () => {
     <>
       <BreadcrumbsComponent
         title="Giới thiệu"
-        breadcrumbs={[
-          { label: "Home", href: "/" },
-          { label: "About Us" },
-        ]}
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "About Us" }]}
       />
 
       <Box
@@ -69,7 +66,7 @@ const About = () => {
               </Button>
               <Box
                 component="img"
-                src="/demo/images/single-image-about.jpg"
+                src="https://cdn2.tuoitre.vn/thumb_w/640/471584752817336320/2025/4/23/truong-dai-hoc-sai-gon-17454525370672073466598.jpg"
                 alt="Giới thiệu EventSphere"
                 sx={{ width: "100%", display: "block" }}
               />
@@ -80,23 +77,28 @@ const About = () => {
           <Grid item xs={12} md={6}>
             <Box sx={{ pl: { md: 5 }, mt: { xs: 2, md: 5 } }}>
               <Typography variant="h3" gutterBottom sx={{ fontWeight: 800 }}>
-                EventSphere — Cổng sự kiện Đại học
+                EventSphere — University Event Portal
               </Typography>
 
               <Typography paragraph variant="h6">
-                Nền tảng tập trung giúp sinh viên, câu lạc bộ và phòng ban
-                <strong> tạo – quản lý – khám phá</strong> sự kiện một cách
-                nhanh chóng và minh bạch.
+                Centralized platform to help students, clubs and departments{" "}
+                <strong> create – manage – discover</strong>events quickly and
+                transparently.
               </Typography>
 
               <Typography paragraph variant="body1" color="text.secondary">
-                Từ hội thảo học thuật, giải thể thao, đến hoạt động thiện
-                nguyện, EventSphere chuẩn hoá quy trình duyệt, đồng bộ lịch và
-                thông báo đa kênh. Mục tiêu của chúng tôi là giúp mọi sự kiện
-                đều tìm được đúng người tham gia, đúng thời điểm, đúng địa điểm.
+                From academic conferences to sports events to charity events,
+                EventSphere streamlines approval processes, synchronizes
+                calendars, and multi-channel notifications. Our goal is to help
+                every event reach the right people, at the right time, in the
+                right place.
               </Typography>
 
-              <Stack direction="row" spacing={2} sx={{ mt: 2, flexWrap: "wrap" }}>
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{ mt: 2, flexWrap: "wrap" }}
+              >
                 <Button
                   variant="contained"
                   href="/events/calendar"
@@ -109,7 +111,7 @@ const About = () => {
                     "&:hover": { backgroundColor: "#D85A60" },
                   }}
                 >
-                  Xem lịch sự kiện
+                  See event calendar
                 </Button>
                 <Button
                   variant="outlined"
@@ -127,7 +129,7 @@ const About = () => {
                     },
                   }}
                 >
-                  Đăng sự kiện
+                  Post events
                 </Button>
               </Stack>
             </Box>
@@ -171,7 +173,7 @@ const About = () => {
       {/* Album ảnh sự kiện */}
       <Box sx={{ width: "90%", mx: "auto", mt: 4 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
-          Album ảnh sự kiện
+          Album event photo
         </Typography>
       </Box>
       <InstagramGallery />

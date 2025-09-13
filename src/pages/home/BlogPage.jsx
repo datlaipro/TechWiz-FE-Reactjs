@@ -1,5 +1,17 @@
 import React, { useMemo, useState } from "react";
-import { Box, Grid, Typography, Stack, TextField, FormControl, InputLabel, Select, MenuItem, Chip, Button } from "@mui/material";
+import {
+  Box,
+  Grid,
+  Typography,
+  Stack,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip,
+  Button,
+} from "@mui/material";
 import PostCard from "../../components/display/post/PostCard";
 import BreadcrumbsComponent from "../../components/display/free/BreadcrumbsComponent";
 import PaginationComponent from "../../components/display/free/PaginationComponent";
@@ -8,103 +20,118 @@ import InstagramGallery from "../../components/display/GroupItems/InstagramGalle
 import CustomerReviewsSlider from "../../components/action/CustomerReviewsSlider";
 
 const BlogPage = () => {
-  // ===== Dữ liệu mẫu cho "Bản tin sự kiện" =====
+  // ===== Sample data for "Event News" =====
   const posts = [
     {
-      image: "https://assets-global.website-files.com/605baba32d94435376625d33/6514274edaff1d5c70319e8f_64dcd9b38b33dd95c766b3dd_work-social-events.jpeg",
-      category: "Thông báo",
-      department: "Khoa CNTT",
-      title: "Mở đăng ký Seminar: Ứng dụng AI trong Giáo dục",
-      description: "Diễn ra ngày 20/09 tại C204. Số lượng chỗ ngồi có hạn, đăng ký trước 18/09.",
+      image:
+        "https://assets-global.website-files.com/605baba32d94435376625d33/6514274edaff1d5c70319e8f_64dcd9b38b33dd95c766b3dd_work-social-events.jpeg",
+      category: "Announcement",
+      department: "IT Faculty",
+      title: "Registration Open: Seminar on AI in Education",
+      description:
+        "Takes place on September 20 at C204. Limited seats—register by September 18.",
       date: "2025-09-12",
       postLink: "/news/announce-ai-seminar",
       categoryLink: "/news?type=announce",
     },
     {
       image: "https://valterlongo.com/wp-content/uploads/2019/03/coffee-break.jpg",
-      category: "Điểm tin",
-      department: "Trung tâm Việc làm",
-      title: "Career Fair 2025: 60+ doanh nghiệp xác nhận tham dự",
-      description: "Có khu vực phỏng vấn trực tiếp, workshop CV và góc ảnh headshot miễn phí.",
+      category: "News",
+      department: "Career Center",
+      title: "Career Fair 2025: 60+ Companies Confirmed",
+      description:
+        "On-site interviews, CV workshops, and a free headshot corner.",
       date: "2025-09-10",
       postLink: "/news/career-fair-preview",
       categoryLink: "/news?type=news",
     },
     {
-      image: "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/teamwork-marketing-presentation-or-business-man-planning-collaboration-or-working-on-strategy-co-768x383.jpg",
-      category: "Hướng dẫn",
-      department: "Khoa CNTT",
-      title: "Cẩm nang tham gia Hackathon: Smart Campus",
-      description: "Chuẩn bị đội hình, timeline 48h, checklist nộp bài, tiêu chí chấm điểm.",
+      image:
+        "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/teamwork-marketing-presentation-or-business-man-planning-collaboration-or-working-on-strategy-co-768x383.jpg",
+      category: "Guide",
+      department: "IT Faculty",
+      title: "Handbook for the Smart Campus Hackathon",
+      description:
+        "Team prep, 48-hour timeline, submission checklist, and scoring criteria.",
       date: "2025-09-09",
       postLink: "/news/hackathon-guide",
       categoryLink: "/news?type=guide",
     },
     {
-      image: "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/brazilian-lady-showing-chart-giving-training-using-laptop-and-monitor-tv-in-indoors-classroom.jpg",
-      category: "Thông báo",
-      department: "Trung tâm Thể thao",
-      title: "Lịch thi đấu University Football Cup 2025",
-      description: "Cập nhật bảng đấu, thời gian và địa điểm các trận vòng loại.",
+      image:
+        "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/brazilian-lady-showing-chart-giving-training-using-laptop-and-monitor-tv-in-indoors-classroom.jpg",
+      category: "Announcement",
+      department: "Sports Center",
+      title: "Match Schedule: University Football Cup 2025",
+      description:
+        "Group tables, times, and venues for the qualifiers.",
       date: "2025-09-11",
       postLink: "/news/football-cup-schedule",
       categoryLink: "/news?type=announce",
     },
     {
-      image: "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/social-media-network-diagram-1536x1028.jpg",
+      image:
+        "https://matchboxdesigngroup.com/wp-content/uploads/2023/01/social-media-network-diagram-1536x1028.jpg",
       category: "Recap",
-      department: "Phòng Công tác SV",
-      title: "Recap Tuần lễ Định hướng Tân sinh viên",
-      description: "Những khoảnh khắc ấn tượng, tài liệu & câu hỏi thường gặp.",
+      department: "Student Affairs Office",
+      title: "Recap: Freshmen Orientation Week",
+      description:
+        "Highlights, materials, and frequently asked questions.",
       date: "2025-09-05",
       postLink: "/news/orientation-recap",
       categoryLink: "/news?type=recap",
     },
     {
-      image: "https://matchboxdesigngroup.com/wp-content/uploads/2025/08/UXUI-blog-cover.png",
-      category: "Thông báo",
-      department: "Đoàn – Hội",
-      title: "Hiến máu nhân đạo: Giọt hồng Tri ân",
-      description: "Đăng ký ca hiến từ 07:30–11:30, ngày 28/09 tại Nhà thi đấu Đa năng.",
+      image:
+        "https://matchboxdesigngroup.com/wp-content/uploads/2025/08/UXUI-blog-cover.png",
+      category: "Announcement",
+      department: "Youth Union & Student Association",
+      title: "Blood Donation Drive: Grateful Drops",
+      description:
+        "Register for donation slots 07:30–11:30, September 28 at the Multi-purpose Gym.",
       date: "2025-09-08",
       postLink: "/news/blood-donation-call",
       categoryLink: "/news?type=announce",
     },
     {
-      image: "https://matchboxdesigngroup.com/wp-content/uploads/2025/05/word-image-29645-1.jpeg",
-      category: "Điểm tin",
-      department: "Khoa An toàn thông tin",
-      title: "Điểm tin: Chuỗi seminar An toàn thông tin tháng 9",
-      description: "4 buổi/tuần, chủ đề SOC, DFIR, Web Security, Cloud Security.",
+      image:
+        "https://matchboxdesigngroup.com/wp-content/uploads/2025/05/word-image-29645-1.jpeg",
+      category: "News",
+      department: "Information Security Faculty",
+      title: "News: September Information Security Seminar Series",
+      description:
+        "Four sessions/week: SOC, DFIR, Web Security, and Cloud Security.",
       date: "2025-09-07",
       postLink: "/news/cybersecurity-series",
       categoryLink: "/news?type=news",
     },
     {
-      image: "https://matchboxdesigngroup.com/wp-content/uploads/2025/07/Data-First-Bank-Marketing-Matchbox-Design-Group.jpg",
-      category: "Hướng dẫn",
-      department: "Đoàn – Hội",
-      title: "Hướng dẫn đăng ký tình nguyện viên sự kiện lớn",
-      description: "Yêu cầu, quyền lợi, quy trình duyệt & chấm công giờ CTXH.",
+      image:
+        "https://matchboxdesigngroup.com/wp-content/uploads/2025/07/Data-First-Bank-Marketing-Matchbox-Design-Group.jpg",
+      category: "Guide",
+      department: "Youth Union & Student Association",
+      title: "Guide: Registering as a Volunteer for Major Events",
+      description:
+        "Requirements, benefits, approval process, and community service hour tracking.",
       date: "2025-09-06",
       postLink: "/news/volunteer-handbook",
       categoryLink: "/news?type=guide",
     },
   ];
 
-  // ===== Bộ lọc nhanh =====
+  // ===== Quick filters =====
   const [q, setQ] = useState("");
-  const [type, setType] = useState(""); // Thông báo | Điểm tin | Recap | Hướng dẫn
-  const [dept, setDept] = useState(""); // Khoa/Phòng ban
+  const [type, setType] = useState(""); // Announcement | News | Recap | Guide
+  const [dept, setDept] = useState(""); // Department/Faculty
 
-  const typeOptions = ["Thông báo", "Điểm tin", "Recap", "Hướng dẫn"];
+  const typeOptions = ["Announcement", "News", "Recap", "Guide"];
   const deptOptions = [
-    "Khoa CNTT",
-    "Trung tâm Việc làm",
-    "Trung tâm Thể thao",
-    "Phòng Công tác SV",
-    "Đoàn – Hội",
-    "Khoa An toàn thông tin",
+    "IT Faculty",
+    "Career Center",
+    "Sports Center",
+    "Student Affairs Office",
+    "Youth Union & Student Association",
+    "Information Security Faculty",
   ];
 
   const filtered = useMemo(() => {
@@ -122,7 +149,7 @@ const BlogPage = () => {
   return (
     <>
       <BreadcrumbsComponent
-        title="Bản tin sự kiện"
+        title="Event News"
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Blog" },
@@ -130,7 +157,7 @@ const BlogPage = () => {
       />
 
       <Box sx={{ py: 4 }}>
-        {/* Header + filter */}
+        {/* Header + filters */}
         <Box
           sx={{
             maxWidth: "xl",
@@ -147,31 +174,35 @@ const BlogPage = () => {
           >
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="h4" sx={{ fontWeight: 800 }}>
-                Bản tin sự kiện
+                Event News
               </Typography>
               <Chip
-                label={`${filtered.length} bài viết`}
+                label={`${filtered.length} posts`}
                 variant="outlined"
                 size="small"
               />
             </Stack>
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ width: { xs: "100%", md: "auto" } }}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              sx={{ width: { xs: "100%", md: "auto" } }}
+            >
               <TextField
                 size="small"
-                placeholder="Tìm theo tiêu đề, nội dung…"
+                placeholder="Search by title or content…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 fullWidth
               />
               <FormControl size="small" sx={{ minWidth: 160 }}>
-                <InputLabel>Loại bản tin</InputLabel>
+                <InputLabel>News type</InputLabel>
                 <Select
-                  label="Loại bản tin"
+                  label="News type"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                 >
-                  <MenuItem value="">Tất cả</MenuItem>
+                  <MenuItem value="">All</MenuItem>
                   {typeOptions.map((t) => (
                     <MenuItem key={t} value={t}>
                       {t}
@@ -181,13 +212,13 @@ const BlogPage = () => {
               </FormControl>
 
               <FormControl size="small" sx={{ minWidth: 180 }}>
-                <InputLabel>Phòng ban</InputLabel>
+                <InputLabel>Department</InputLabel>
                 <Select
-                  label="Phòng ban"
+                  label="Department"
                   value={dept}
                   onChange={(e) => setDept(e.target.value)}
                 >
-                  <MenuItem value="">Tất cả</MenuItem>
+                  <MenuItem value="">All</MenuItem>
                   {deptOptions.map((d) => (
                     <MenuItem key={d} value={d}>
                       {d}
@@ -199,7 +230,7 @@ const BlogPage = () => {
           </Stack>
         </Box>
 
-        {/* Grid bài viết */}
+        {/* Posts grid */}
         <Box id="news-list" sx={{ py: 2 }}>
           <Grid
             container
@@ -215,7 +246,11 @@ const BlogPage = () => {
                 md={6}
                 lg={3}
                 key={index}
-                sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
               >
                 <Box
                   sx={{
@@ -242,9 +277,9 @@ const BlogPage = () => {
       </Box>
 
       <PaginationComponent />
-      {/* TODO: Khi có API, truyền page & totalPages để phân trang thực */}
+      {/* TODO: When the API is ready, pass page & totalPages for real pagination */}
 
-      {/* Album ảnh & phản hồi (có thể đổi thành "Cảm nhận người tham gia") */}
+      {/* Photo album & feedback (can be renamed to "Participant Testimonials") */}
       <InstagramGallery />
       <CustomerReviewsSlider />
       <CategoriesSection />

@@ -6,12 +6,12 @@ import Grid from "@mui/material/Grid";
 
 const InstagramGallery = () => {
   const instagramItems = [
-    { image: "/demo/images/insta-item1.jpg", link: "#" },
-    { image: "/demo/images/insta-item2.jpg", link: "#" },
-    { image: "/demo/images/insta-item3.jpg", link: "#" },
-    { image: "/demo/images/insta-item4.jpg", link: "#" },
-    { image: "/demo/images/insta-item5.jpg", link: "#" },
-    { image: "/demo/images/insta-item6.jpg", link: "#" },
+    { image: "https://cdn2.tuoitre.vn/thumb_w/640/471584752817336320/2025/4/23/truong-dai-hoc-sai-gon-17454525370672073466598.jpg", link: "#" },
+    { image: "https://cdn2.tuoitre.vn/thumb_w/640/471584752817336320/2025/4/23/truong-dai-hoc-sai-gon-17454525370672073466598.jpg", link: "#" },
+    { image: "https://cdn2.tuoitre.vn/thumb_w/640/471584752817336320/2025/4/23/truong-dai-hoc-sai-gon-17454525370672073466598.jpg", link: "#" },
+    { image: "https://cdn2.tuoitre.vn/thumb_w/640/471584752817336320/2025/4/23/truong-dai-hoc-sai-gon-17454525370672073466598.jpg", link: "#" },
+    { image: "https://cdn2.tuoitre.vn/thumb_w/640/471584752817336320/2025/4/23/truong-dai-hoc-sai-gon-17454525370672073466598.jpg", link: "#" },
+    { image: "https://cdn2.tuoitre.vn/thumb_w/640/471584752817336320/2025/4/23/truong-dai-hoc-sai-gon-17454525370672073466598.jpg", link: "#" },
   ];
 
   return (

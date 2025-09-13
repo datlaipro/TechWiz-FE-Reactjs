@@ -15,86 +15,60 @@ import {
 import PostCard from "./PostCard";
 
 const LatestPosts = () => {
-  // ===== Demo events (hard-code) =====
+  // ===== Demo events (hard-coded) =====
   const events = [
     {
       image: "https://picsum.photos/id/1003/1200/800",
       category: "Orientation", // type
-      department: "Phòng Công tác SV",
-      title: "Tuần lễ Định hướng Tân sinh viên 2025",
+      department: "Student Affairs Office",
+      title: "Freshmen Orientation Week 2025",
       description:
-        "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
+        "Welcome freshmen: campus tour, scholarship talk show, and club activities.",
       date: "2025-09-15",
       time: "08:00–16:30",
-      location: "Hội trường A1",
+      location: "A1 Auditorium",
       postLink: "/events/orientation-2025",
       categoryLink: "/events?type=orientation",
     },
     {
       image: "https://picsum.photos/id/1003/1200/800",
       category: "Seminar",
-      department: "Khoa CNTT",
-      title: "Seminar: Ứng dụng AI trong Giáo dục",
+      department: "IT Faculty",
+      title: "Seminar: AI Applications in Education",
       description:
-        "Chia sẻ của diễn giả từ doanh nghiệp EdTech về LLM, cá nhân hoá học tập.",
+        "A talk by an EdTech speaker on LLMs and personalized learning.",
       date: "2025-09-20",
       time: "13:30–15:30",
-      location: "Phòng C204",
+      location: "Room C204",
       postLink: "/events/ai-in-education-llm",
       categoryLink: "/events?type=seminar",
     },
     {
       image: "https://picsum.photos/id/1003/1200/800",
-      category: "Orientation", // type
-      department: "Phòng Công tác SV",
-      title: "Tuần lễ Định hướng Tân sinh viên 2025",
+      category: "Orientation",
+      department: "Student Affairs Office",
+      title: "Freshmen Orientation Week 2025",
       description:
-        "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
+        "Welcome freshmen: campus tour, scholarship talk show, and club activities.",
       date: "2025-09-15",
       time: "08:00–16:30",
-      location: "Hội trường A1",
+      location: "A1 Auditorium",
       postLink: "/events/orientation-2025",
       categoryLink: "/events?type=orientation",
     },
     {
       image: "https://picsum.photos/id/1003/1200/800",
-      category: "Orientation", // type
-      department: "Phòng Công tác SV",
-      title: "Tuần lễ Định hướng Tân sinh viên 2025",
+      category: "Orientation",
+      department: "Student Affairs Office",
+      title: "Freshmen Orientation Week 2025",
       description:
-        "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
+        "Welcome freshmen: campus tour, scholarship talk show, and club activities.",
       date: "2025-09-15",
       time: "08:00–16:30",
-      location: "Hội trường A1",
+      location: "A1 Auditorium",
       postLink: "/events/orientation-2025",
       categoryLink: "/events?type=orientation",
     },
-    // {
-    //   image: "https://picsum.photos/id/1003/1200/800",
-    //   category: "Orientation", // type
-    //   department: "Phòng Công tác SV",
-    //   title: "Tuần lễ Định hướng Tân sinh viên 2025",
-    //   description:
-    //     "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
-    //   date: "2025-09-15",
-    //   time: "08:00–16:30",
-    //   location: "Hội trường A1",
-    //   postLink: "/events/orientation-2025",
-    //   categoryLink: "/events?type=orientation",
-    // },
-    // {
-    //   image: "https://picsum.photos/id/1003/1200/800",
-    //   category: "Orientation", // type
-    //   department: "Phòng Công tác SV",
-    //   title: "Tuần lễ Định hướng Tân sinh viên 2025",
-    //   description:
-    //     "Chào mừng tân sinh viên: tour campus, talk show học bổng, hoạt động câu lạc bộ.",
-    //   date: "2025-09-15",
-    //   time: "08:00–16:30",
-    //   location: "Hội trường A1",
-    //   postLink: "/events/orientation-2025",
-    //   categoryLink: "/events?type=orientation",
-    // },
   ];
 
   // ===== Filters =====
@@ -110,8 +84,8 @@ const LatestPosts = () => {
 
     const msPerDay = 24 * 60 * 60 * 1000;
     const diffDays = Math.floor((d - now) / msPerDay); // future if >= 0
-    if (mode === "week") return diffDays >= -1 && diffDays <= 7; // từ hôm qua -> 7 ngày tới
-    if (mode === "month") return diffDays >= -3 && diffDays <= 31; // buffer nhẹ
+    if (mode === "week") return diffDays >= -1 && diffDays <= 7; // from yesterday -> next 7 days
+    if (mode === "month") return diffDays >= -3 && diffDays <= 31; // small buffer
     return true;
   };
 
@@ -129,9 +103,9 @@ const LatestPosts = () => {
     });
   }, [q, type, dept, timeframe]);
 
-  // Helper render line under title for date/time/location (đưa vào description cho PostCard)
+  // Helper: render date/time/location under title (put into PostCard description)
   const formatMeta = (e) =>
-    `${new Date(e.date).toLocaleDateString("vi-VN")} • ${e.time} • ${e.location}`;
+    `${new Date(e.date).toLocaleDateString("en-US")} • ${e.time} • ${e.location}`;
 
   // ===== Unique lists for Select =====
   const typeOptions = [
@@ -143,11 +117,11 @@ const LatestPosts = () => {
     "Career Fair",
   ];
   const deptOptions = [
-    "Phòng Công tác SV",
-    "Khoa CNTT",
-    "Trung tâm Thể thao",
-    "Đoàn – Hội",
-    "Trung tâm Việc làm",
+    "Student Affairs Office",
+    "IT Faculty",
+    "Sports Center",
+    "Youth Union & Student Association",
+    "Career Center",
   ];
 
   return (
@@ -174,10 +148,10 @@ const LatestPosts = () => {
               component="h3"
               sx={{ fontWeight: 700, letterSpacing: 0.2 }}
             >
-              Sự kiện sắp diễn ra
+              Upcoming events
             </Typography>
             <Chip
-              label={`${filtered.length} sự kiện`}
+              label={`${filtered.length} events`}
               variant="outlined"
               size="small"
             />
@@ -196,7 +170,7 @@ const LatestPosts = () => {
               "&:hover": { backgroundColor: "#D85A60" },
             }}
           >
-            Xem lịch
+            View calendar
           </Button>
         </Grid>
 
@@ -212,19 +186,19 @@ const LatestPosts = () => {
             <TextField
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Tìm theo từ khóa: tiêu đề, mô tả, địa điểm…"
+              placeholder="Search by keywords: title, description, location…"
               size="small"
               fullWidth
             />
 
             <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Loại sự kiện</InputLabel>
+              <InputLabel>Event type</InputLabel>
               <Select
-                label="Loại sự kiện"
+                label="Event type"
                 value={type}
                 onChange={(e) => setType(e.target.value)}
               >
-                <MenuItem value="">Tất cả</MenuItem>
+                <MenuItem value="">All</MenuItem>
                 {typeOptions.map((t) => (
                   <MenuItem key={t} value={t}>
                     {t}
@@ -234,13 +208,13 @@ const LatestPosts = () => {
             </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Phòng ban</InputLabel>
+              <InputLabel>Department</InputLabel>
               <Select
-                label="Phòng ban"
+                label="Department"
                 value={dept}
                 onChange={(e) => setDept(e.target.value)}
               >
-                <MenuItem value="">Tất cả</MenuItem>
+                <MenuItem value="">All</MenuItem>
                 {deptOptions.map((d) => (
                   <MenuItem key={d} value={d}>
                     {d}
@@ -250,15 +224,15 @@ const LatestPosts = () => {
             </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Mốc thời gian</InputLabel>
+              <InputLabel>Time range</InputLabel>
               <Select
-                label="Mốc thời gian"
+                label="Time range"
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
               >
-                <MenuItem value="week">Trong 1 tuần</MenuItem>
-                <MenuItem value="month">Trong 1 tháng</MenuItem>
-                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="week">Within 1 week</MenuItem>
+                <MenuItem value="month">Within 1 month</MenuItem>
+                <MenuItem value="all">All</MenuItem>
               </Select>
             </FormControl>
           </Stack>
@@ -288,7 +262,7 @@ const LatestPosts = () => {
           </Grid>
         ))}
 
-        {/* Nếu không có kết quả */}
+        {/* Empty state */}
         {filtered.length === 0 && (
           <Grid item xs={12}>
             <Box
@@ -302,10 +276,11 @@ const LatestPosts = () => {
               }}
             >
               <Typography variant="h6" sx={{ mb: 1 }}>
-                Chưa tìm thấy sự kiện phù hợp
+                No matching events found
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Hãy thử đổi từ khóa, loại sự kiện, phòng ban hoặc mốc thời gian.
+                Try adjusting the keywords, event type, department, or time
+                range.
               </Typography>
             </Box>
           </Grid>

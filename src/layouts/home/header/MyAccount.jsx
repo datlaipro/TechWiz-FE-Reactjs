@@ -41,14 +41,18 @@ const API_BASE =
   import.meta?.env?.VITE_API_BASE_URL ||
   process.env.REACT_APP_API_BASE_URL ||
   "http://localhost:6868";
+const buildHeaders = (tk) => ({
+  Accept: "application/json",
+  "Content-Type": "application/json; charset=UTF-8",
+  ...(tk ? { Authorization: `Bearer ${tk}` } : {}),
+});
+const { token, role, userId } = readAuth();
 
-const { token } = readAuth();
 const authHeaders = {
   Accept: "application/json",
   "Content-Type": "application/json; charset=UTF-8",
   ...(token ? { Authorization: `Bearer ${token}` } : {}),
 };
-
 /* ---------- Helpers: decode JWT & đọc localStorage ---------- */
 function b64urlDecode(str) {
   try {
@@ -84,6 +88,7 @@ function isTokenExpired(token) {
   }
 }
 function readAuthFromStorage() {
+  // Đọc từ localStorage theo thứ tự ưu tiên
   try {
     const rawNew = localStorage.getItem(STORAGE_KEY_NEW);
     if (rawNew) {
@@ -211,7 +216,6 @@ export default function MyAccount() {
   if (eventId && studentId) {
     localStorage.setItem(REG_KEY, `${eventId}|${studentId}`);
   }
-  const payload = { eventId, studentId, size: 240 };
 
   // Đồng bộ auth theo localStorage
   useEffect(() => {
@@ -230,21 +234,48 @@ export default function MyAccount() {
   useEffect(() => {
     setAuth(readAuthFromStorage());
   }, []);
+  console.log("token", accessToken, "payload", {
+    eventId,
+    studentId,
+    size: 240,
+  });
 
   // ====== FIX: gọi API phát QR đúng chuẩn axios.post(url, data, config)
   const fetchTickets = async () => {
-    if (!accessToken) return;
+    if (!accessToken) {
+      setErr("Chưa có accessToken.");
+      setLoading(false);
+      return;
+    }
+    if (!eventId || !studentId) {
+      setErr("Thiếu eventId hoặc studentId.");
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setErr("");
-      const res = await axios.post(
-        `${API_BASE}/api/qr/issue`,
-        payload,
-        { headers: authHeaders }
+
+      // payload đúng theo BE yêu cầu
+      const body = { eventId, studentId, size: 240 };
+
+      // *** QUAN TRỌNG: data và config tách riêng ***
+      // const res = await axios.post(`${API_BASE}/api/qr/issue`, body, {
+      //   headers: buildHeaders(accessToken),
+      // });
+     const res = await axios.post(`${API_BASE}/api/qr/issue`, {
+        headers: buildHeaders(accessToken),body
+      });
+      setTickets(
+        Array.isArray(res.data) ? res.data : [res.data].filter(Boolean)
       );
-      setTickets(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
-      setErr(e?.response?.data?.message || e?.message || "Lỗi tải vé/QR.");
+      const msg =
+        e?.response?.data?.message ||
+        `HTTP ${e?.response?.status || ""}`.trim() ||
+        e?.message ||
+        "Lỗi tải vé/QR.";
+      setErr(msg);
     } finally {
       setLoading(false);
     }
@@ -258,7 +289,7 @@ export default function MyAccount() {
     if (eventCache.current.has(id)) return eventCache.current.get(id);
     try {
       const res = await axios.get(`${API_BASE}/api/events/${id}`, {
-        headers: authHeaders,
+        headers: buildHeaders(accessToken),
       });
       const data = res?.data || null;
       eventCache.current.set(id, data);
@@ -271,12 +302,13 @@ export default function MyAccount() {
 
   const tryGet = async (url) => {
     try {
-      const r = await axios.get(url, { headers: authHeaders });
+      const r = await axios.get(url, { headers: buildHeaders(accessToken) });
       if (Array.isArray(r.data)) return r.data;
-      if (r?.data?.content && Array.isArray(r.data.content)) return r.data.content; // nếu dạng page
+      if (r?.data?.content && Array.isArray(r.data.content))
+        return r.data.content;
       return [];
     } catch {
-      return null; // cho phép fallback endpoint khác
+      return null;
     }
   };
 
@@ -292,6 +324,7 @@ export default function MyAccount() {
         `${API_BASE}/api/registrations/student/${studentId}`,
         `${API_BASE}/api/registrations/by-student/${studentId}`,
         `${API_BASE}/api/registrations?studentId=${studentId}`,
+        `${API_BASE}/api/registrations`,
       ];
       let raw = null;
       for (const ep of endpoints) {
@@ -316,13 +349,15 @@ export default function MyAccount() {
             eventDate: ev?.startDate || ev?.date || null,
             venue: ev?.venue || "",
             department: ev?.department || ev?.organizer || "",
-            link: ev?.id ? `/productdetail/${ev.id}` : undefined, // tuỳ route của bạn
+            link: ev?.id ? `/productdetail/${ev.eventId}` : undefined, // tuỳ route của bạn
           };
         })
       );
       setRegs(enriched);
     } catch (e) {
-      setRegsErr(e?.response?.data?.message || e?.message || "Lỗi tải đăng ký.");
+      setRegsErr(
+        e?.response?.data?.message || e?.message || "Lỗi tải đăng ký."
+      );
     } finally {
       setRegsLoading(false);
     }
@@ -352,7 +387,8 @@ export default function MyAccount() {
       PENDING_L: { label: "Chờ duyệt", color: "warning" },
       CANCELED_L: { label: "Đã hủy", color: "default" },
     };
-    const m = map[key] || map[`${key}_L`] || { label: s || "Trạng thái", color: "default" };
+    const m = map[key] ||
+      map[`${key}_L`] || { label: s || "Trạng thái", color: "default" };
     return <Chip size="small" color={m.color} label={m.label} />;
   };
 
@@ -388,8 +424,12 @@ export default function MyAccount() {
     }
     // Nếu không có eventDate (BE chưa có), fallback sort theo registeredOn
     arr.sort((a, b) => {
-      const da = a.eventDate ? new Date(a.eventDate) : new Date(a.registeredOn || 0);
-      const db = b.eventDate ? new Date(b.eventDate) : new Date(b.registeredOn || 0);
+      const da = a.eventDate
+        ? new Date(a.eventDate)
+        : new Date(a.registeredOn || 0);
+      const db = b.eventDate
+        ? new Date(b.eventDate)
+        : new Date(b.registeredOn || 0);
       return da - db;
     });
     return arr;
@@ -442,7 +482,8 @@ export default function MyAccount() {
               Tài khoản của tôi
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Vé sự kiện &amp; QR đã đăng ký – phục vụ check-in tại khu vực sự kiện.
+              Vé sự kiện &amp; QR đã đăng ký – phục vụ check-in tại khu vực sự
+              kiện.
             </Typography>
           </Box>
           <Box sx={{ flex: 1 }} />
@@ -729,7 +770,9 @@ export default function MyAccount() {
                     <Typography variant="body2">
                       Khi đăng ký thành công, mục này sẽ hiển thị dạng:
                       <code style={{ marginLeft: 6 }}>
-                        {"{ registrationId, eventId, studentId, status, registeredOn }"}
+                        {
+                          "{ registrationId, eventId, studentId, status, registeredOn }"
+                        }
                       </code>
                     </Typography>
                   </Box>
@@ -765,7 +808,11 @@ export default function MyAccount() {
                           mt={0.5}
                         >
                           {item.eventDate && (
-                            <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                            >
                               <CalendarMonthRoundedIcon fontSize="small" />
                               <Typography variant="body2">
                                 {fmt(item.eventDate)}
@@ -774,7 +821,11 @@ export default function MyAccount() {
                           )}
 
                           {item.venue && (
-                            <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                            >
                               <PlaceRoundedIcon fontSize="small" />
                               <Typography variant="body2">
                                 {item.venue}
@@ -795,7 +846,11 @@ export default function MyAccount() {
                         </Stack>
                       </Box>
 
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="flex-end"
+                      >
                         {item.link ? (
                           <Button
                             size="small"

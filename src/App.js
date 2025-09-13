@@ -68,7 +68,7 @@ function AppContent() {
           <Route path="about" element={<About />} />
           <Route path="my-account" element={<MyAccount />} />
           
-          <Route path="shop" element={<ShopPage />} />
+          <Route path="allevent" element={<ShopPage />} />
           <Route path="blog" element={<BlogPage />} />
           <Route path="contact" element={<ContactPage />} />
           {/* <Route path="singlepost" element={<SinglePost />} /> */}
