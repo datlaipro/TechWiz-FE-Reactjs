@@ -82,12 +82,12 @@ function LayoutAdmin() {
   // Menu cho Drawer tạm thời (mobile, 3 cột)
   const mobileMenu = (
     <Grid container spacing={2} sx={{ p: 2, bgcolor: '#263238' }}>
-      {['Dashboard', 'Products', 'Ware House', 'Order', 'User', 'Supplier', 'Maketing', 'Review','QR'].map((text, index) => {
+      {['Dashboard', 'Event', 'Event Posted', 'Order', 'User', 'Supplier', 'Maketing', 'Review','QR'].map((text, index) => {
         const paths = [
           '/admin',
           
           '/admin/product',
-          '/admin/import-products',
+          '/admin/event-posted',
           '/admin/order',
           '/admin/user',
           '/admin/supplier',
@@ -138,8 +138,8 @@ function LayoutAdmin() {
   const desktopMenu = (
     <>
       <List>
-        {['Dashboard', 'Products', 'Ware House', 'Order', 'User','QR'].map((text, index) => {
-          const paths = ['/admin', '/admin/product', '/admin/import-products', '/admin/order', '/admin/user','/admin/qr-kit'];
+        {['Dashboard', 'Event', 'Event Posted', 'Order', 'User','QR'].map((text, index) => {
+          const paths = ['/admin', '/admin/events', '/admin/event-posted', '/admin/order', '/admin/user','/admin/qr-kit'];
           return (
             <ListItem key={text} disablePadding>
               <Tooltip
@@ -278,13 +278,13 @@ function LayoutAdmin() {
           }}
         >
           {drawerOpen ? (
-            <img src="/demo/images/main-logo1.png" alt="SHOP" style={{ width: '120px', height: 'auto' }} />
+            <img src="https://pub-3d10e52fdf5d49fba5f48198b8864aa8.r2.dev/post/TECHWIZ%20LOGO.png" alt="SHOP" style={{ width: '120px', height: 'auto' }} />
           ) : (
             <MenuIcon />
           )}
         </IconButton>
         <Typography sx={{ display: { xs: 'block', md: drawerOpen ? 'none' : 'none' }, color: '#CFD8DC' }}>
-          BOOK SHOP
+          Event
         </Typography>
       </Toolbar>
       <Divider sx={{ bgcolor: '#37474F' }} />

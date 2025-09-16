@@ -104,7 +104,7 @@ function AppContent() {
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="product" element={<ProductList />} />
+          <Route path="events" element={<ProductList />} />
           <Route path="qr-kit" element={<QrKit />} />
 
           <Route path="addevent" element={<AddProduct />} />
@@ -127,7 +127,7 @@ function AppContent() {
           <Route path="review" element={<ReviewList />} />
           <Route path="add-review" element={<AddReview />} />
           <Route path="edit-review/:reviewId" element={<EditReview />} />
-          <Route path="import-products" element={<ImportProductList />} />
+          <Route path="event-posted" element={<ImportProductList />} />
           <Route path="create-import-product" element={<CreateImportProduct />} />
           <Route path="edit-import-product/:importId" element={<EditImportProduct />} />
         </Route>

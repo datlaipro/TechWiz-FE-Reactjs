@@ -229,10 +229,12 @@ function Dashboard() {
     )
   ).length;
 
-  const newsThisMonth = news.filter((n) => {
-    const d = parseISO(n.publishAt || n.createdAt);
-    return d && d >= monthStart && d <= monthEnd;
-  }).length;
+// 🟩 ĐẾM SỰ KIỆN ĐANG DIỄN RA TẠI THỜI ĐIỂM HIỆN TẠI
+ const ongoingNowCount = events.filter((e) => {
+   const s = parseISO(e.startDate);
+   const ee = parseISO(e.endDate) || s; // nếu không có endDate thì coi kết thúc = startDate
+   return s && ee && s <= now && now <= ee;
+ }).length;
 
   const pendingEvents = news.filter(
     (e) =>
@@ -366,33 +368,34 @@ function Dashboard() {
 
   /* ========================= Render ========================= */
   return (
-    <Box sx={{ mt: 1, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" }}>
+    <Box sx={{ mt: 1, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" ,cursor:"pointer"}}>
       {/* TOP: KPI Sự kiện & Tin tức (to gấp đôi) */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <KpiCard
           large
-          title="Sự kiện trong tháng"
+          title="Events of the month"// sự kiện trong tháng (hiển thị ra sự kiện đã được duyệt )
           value={eventsThisMonth}
           icon={<CalendarMonthRounded sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)"
         />
         <KpiCard
+        link={'/admin/event-posted'}
           large
-          title="Sự kiện đăng diễn ra "
-          value={newsThisMonth}
+          title="Event posted"// sự kiện đăng diễn ra 
+          value={ongoingNowCount}
           icon={<Article sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #00897b 0%, #26a69a 100%)"
         />
         <KpiCard
           large
-          title="Chờ duyệt (Sự kiện)"
+          title="Pending approval (Event)"// chờ duyệt sự kiện 
           value={`${pendingEvents}`}
           icon={<PendingActions sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #5e35b1 0%, #9575cd 100%)"
         />
         <KpiCard
           large
-          title="Số lượng người đăng ký"
+          title="Number of subscribers"// số lượng người đăng kí 
           value={conflictCount}
           icon={<WarningAmberRounded sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #f57c00 0%, #ffb74d 100%)"
@@ -487,7 +490,7 @@ function Dashboard() {
         <Grid item xs={12}>
           <Paper sx={paperCardSx}>
             <Typography variant="h6" sx={cardTitleSx}>
-              Lịch sự kiện (theo ngày)
+              Lịch sự kiện 
             </Typography>
             {eventsByDay.length === 0 ? (
               <Alert severity="info">Không có sự kiện phù hợp bộ lọc</Alert>
@@ -746,9 +749,14 @@ const paperCardSx = {
 
 const cardTitleSx = { fontWeight: "bold", color: "text.primary", mb: 1.5 };
 
-function KpiCard({ title, value, icon, gradient, large }) {
+function KpiCard({ title, value, icon, gradient, large,link }) {
+  const navigate = useNavigate();
   return (
-    <Grid item xs={12} sm={6} md={3}>
+    <Grid item xs={12} sm={6} md={3} onClick={()=>{
+      navigate(link)
+     
+    }}>
+      
       <Paper
         sx={{
           p: large ? 3 : 2,
@@ -766,6 +774,7 @@ function KpiCard({ title, value, icon, gradient, large }) {
           },
         }}
       >
+        
         <Box sx={{ mr: 2 }}>{icon}</Box>
         <Box>
           <Typography

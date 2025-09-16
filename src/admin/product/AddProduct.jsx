@@ -99,9 +99,7 @@ function AddEvent() {
     "Cultural",
     "Sports",
     "Workshop",
-    "Seminar",
-    "Competition",
-    "Other",
+   
   ];
 
   const handleChange = (e) => {

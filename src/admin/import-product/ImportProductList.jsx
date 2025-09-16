@@ -1,370 +1,424 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
-  Button,
-  Collapse,
-  IconButton,
-  TablePagination,
-  CircularProgress,
+  Grid,
   Alert,
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import axios from 'axios';
+  Skeleton,
+  Stack,
+  Chip,
+  TextField,
+  Divider,
+  LinearProgress,
+  FormControlLabel,
+  Switch,
+  IconButton,
+  Button,
+  MenuItem,
+} from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import CalendarMonthRounded from "@mui/icons-material/CalendarMonthRounded";
+import AccessTimeRounded from "@mui/icons-material/AccessTimeRounded";
+import PlaceRounded from "@mui/icons-material/PlaceRounded";
+import FilterAlt from "@mui/icons-material/FilterAlt";
 
-// Cấu hình axios với base URL
-const api = axios.create({
-  baseURL: 'http://localhost:6868',
-  headers: { 'Content-Type': 'application/json' },
-});
+const EVENTS_URL = "http://localhost:6868/api/events";
+const STORAGE_KEY = "authState_v1";
 
-function ImportProductList() {
-  const navigate = useNavigate();
-  const [expandedId, setExpandedId] = useState(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(6);
-  const [importProducts, setImportProducts] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
+function readAuth() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { token: null };
+    const obj = JSON.parse(raw);
+    const token = obj.accessToken || obj.token || obj.jwt || null;
+    return { token };
+  } catch {
+    return { token: null };
+  }
+}
+
+const paperCardSx = {
+  p: 2,
+  borderRadius: "12px",
+  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+  bgcolor: "white",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    boxShadow: "0 8px 28px rgba(0,0,0,0.12)",
+    transform: "translateY(-2px)",
+  },
+};
+
+const cardTitleSx = { fontWeight: "bold", color: "text.primary" };
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const parseISO = (s) => (s ? new Date(s) : null);
+
+function isOngoingAt(ev, refDayStr, now = new Date()) {
+  // hàm lấy ra thời gian hiện tại
+  if (!ev?.startDate) return false;
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const refDay = refDayStr || todayStr();
+  const refTs = new Date(`${refDay}T${hh}:${mm}:00`);
+  const s = parseISO(ev.startDate); // chuyển chuỗi ngày giờ sang
+  const e = parseISO(ev.endDate) || s; // định dạng Date
+  if (!s) return false;
+
+  return s <= refTs && refTs <= e;
+}
+
+function fmtTimeRange(s, e) {
+  const S = parseISO(s);
+  const E = parseISO(e) || S;
+  if (!S) return "—";
+  const pad = (n) => String(n).padStart(2, "0");
+  const from = `${pad(S.getHours())}:${pad(S.getMinutes())}`;
+  const to = `${pad(E.getHours())}:${pad(E.getMinutes())}`;
+  return `${from} - ${to}`;
+}
+
+export default function OngoingEvents() {
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [err, setErr] = useState("");
 
-  // Lấy dữ liệu từ backend khi component mount
+  // ===== Bộ lọc theo ảnh (KHÔNG có khoảng ngày) =====
+  const [dept, setDept] = useState("Tất cả");
+  const [type, setType] = useState("Tất cả");
+  const [qTitle, setQTitle] = useState("");
+
+  // ===== Bộ lọc đặc thù: theo "ngày tham chiếu" & "đang diễn ra" =====
+  const [refDay, setRefDay] = useState(todayStr());
+  const [onlyOngoing, setOnlyOngoing] = useState(true);
+
+  // Tự tick 30s để re-evaluate "đang diễn ra"
+  const [tick, setTick] = useState(Date.now());
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Lấy danh sách phiếu nhập hàng
-        const importResponse = await api.get('/api/import-products');
-        setImportProducts(importResponse.data);
+    if (!onlyOngoing) return;
+    const id = setInterval(() => setTick(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, [onlyOngoing]);
 
-        // Lấy danh sách sản phẩm
-        const productResponse = await api.get('/api/product');
-        setProducts(productResponse.data);
-
-        // Lấy danh sách nhà cung cấp
-        const supplierResponse = await api.get('/api/supplier');
-        setSuppliers(supplierResponse.data);
-
-        setError(null);
-      } catch (err) {
-        setError('Lỗi khi lấy dữ liệu: ' + (err.response?.data?.message || err.message));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const handleEditImport = (importId) => {
-    navigate(`/admin/edit-import-product/${importId}`);
-  };
-
-  const handleDeleteImport = async (importId) => {
-    if (window.confirm('Bạn có chắc muốn xóa phiếu nhập này?')) {
-      try {
-        await api.delete(`/api/import-products/${importId}`);
-        setImportProducts(importProducts.filter((ip) => ip.id !== importId));
-        setError(null);
-      } catch (err) {
-        setError('Lỗi khi xóa phiếu nhập: ' + (err.response?.data?.message || err.message));
-      }
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      setErr("");
+      const { token } = readAuth();
+      const headers = {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      const res = await fetch(EVENTS_URL, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setEvents(Array.isArray(data) ? data : []);
+      setLoading(false);
+    } catch (e) {
+      setErr("Không thể tải danh sách sự kiện");
+      setLoading(false);
     }
   };
 
-  const handleAddImport = () => {
-    navigate('/admin/create-import-product');
-  };
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
-  const handleRowClick = (id) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
+  // Options cho Select
+  const deptOptions = useMemo(() => {
+    const s = new Set(["Tất cả"]);
+    (events || []).forEach((e) => s.add(e.department || e.category || "Khác"));
+    return Array.from(s);
+  }, [events]);
 
-  const getProductName = (productId) => {
-    const product = products.find((p) => p.id === productId);
-    return product ? product.name : 'Không xác định';
-  };
+  const typeOptions = useMemo(() => {
+    const s = new Set(["Tất cả"]);
+    (events || []).forEach((e) => s.add(e.type || "Khác"));
+    return Array.from(s);
+  }, [events]);
 
-  const getSupplierName = (supplierId) => {
-    const supplier = suppliers.find((s) => s.id === supplierId);
-    return supplier ? supplier.name : 'Không xác định';
-  };
+  // Áp tất cả điều kiện lọc
+  const filtered = useMemo(() => {
+    let base;
+    if (onlyOngoing) {
+      const now = new Date();
+      void tick;
+      base = events.filter((ev) => isOngoingAt(ev, refDay, now));// lọc ra những ngày thỏa điều kiện starday <= ngày hiện tại <=nday
+    } else {
+      // Nếu tắt "đang diễn ra": hiển thị các sự kiện có giao với ngày refDay
+      const startDay = new Date(`${refDay}T00:00:00`);
+      const endDay = new Date(`${refDay}T23:59:59`);
+      base = events.filter((ev) => {
+        const s = parseISO(ev.startDate);
+        const e = parseISO(ev.endDate) || s;
+        if (!s) return false;
+        return s <= endDay && e >= startDay;
+      });
+    }
 
-  const getTotalQuantity = (details) => {
-    return details.reduce((total, item) => total + item.quantity, 0);
-  };
+    const q = qTitle.trim().toLowerCase();
+    return base.filter((ev) => {
+      const evDept = ev.department || ev.category || "Khác";
+      const evType = ev.type || "Khác";
+      const okDept = dept === "Tất cả" || evDept === dept;
+      const okType = type === "Tất cả" || evType === type;
+      const okTitle =
+        !q ||
+        String(ev.title || "")
+          .toLowerCase()
+          .includes(q);
+      return okDept && okType && okTitle;
+    });
+  }, [events, onlyOngoing, refDay, tick, dept, type, qTitle]);
 
-  const formatDate = (isoDate) => {
-    return isoDate ? new Date(isoDate).toISOString().split('T')[0] : 'Không xác định';
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+  const handleReset = () => {
+    setDept("Tất cả");
+    setType("Tất cả");
+    setQTitle("");
+    setRefDay(todayStr());
+    setOnlyOngoing(true);
   };
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
+      <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" }}>
+        <Grid container spacing={2}>
+          {[...Array(3)].map((_, i) => (
+            <Grid item xs={12} key={`sk-${i}`}>
+              <Skeleton
+                variant="rectangular"
+                height={120}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }
 
-  if (error) {
+  if (err) {
     return (
-      <Box sx={{ mt: 4, px: 2 }}>
-        <Alert severity="error">{error}</Alert>
+      <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {err}
+        </Alert>
+        <Button onClick={fetchEvents} startIcon={<RefreshIcon />}>
+          Thử lại
+        </Button>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ mt: 8, px: { xs: 2, sm: 4 }, maxWidth: '1400px', mx: 'auto' }}>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-          flexWrap: 'wrap',
-          gap: 2,
-        }}
-      >
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 'bold',
-            color: '#1a2820',
-            letterSpacing: '0.5px',
-          }}
+    <Box sx={{ mt: 1, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" }}>
+      <Paper sx={{ ...paperCardSx }}>
+        {/* ======= HÀNG TRÊN: Thanh filter giống ảnh (không có khoảng ngày) + filter riêng ======= */}
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          alignItems={{ xs: "stretch", md: "center" }}
+          spacing={2}
         >
-          DANH SÁCH PHIẾU NHẬP HÀNG
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleAddImport}
-          sx={{
-            borderRadius: '20px',
-            textTransform: 'none',
-            fontWeight: 'medium',
-            px: 3,
-            py: 1,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            '&:hover': {
-              boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
-              bgcolor: 'primary.dark',
-            },
-          }}
-        >
-          Thêm phiếu nhập
-        </Button>
-      </Box>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <FilterAlt />
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Bộ lọc sự kiện
+            </Typography>
+          </Stack>
 
-      <TableContainer
-        component={Paper}
-        sx={{
-          borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          overflow: 'hidden',
-        }}
-      >
-        <Table sx={{ minWidth: 650 }} aria-label="import product table">
-          <TableHead>
-            <TableRow
-              sx={{
-                backgroundColor: 'grey.100',
-                '& th': {
-                  fontWeight: 'bold',
-                  color: 'text.primary',
-                  py: 2,
-                  borderBottom: '2px solid',
-                  borderColor: 'grey.300',
-                },
-              }}
-            >
-              <TableCell>ID phiếu nhập</TableCell>
-              <TableCell>Ngày nhập</TableCell>
-              <TableCell>Tổng số lượng</TableCell>
-              <TableCell>Hành động</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {importProducts
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((importProduct) => (
-                <React.Fragment key={importProduct.id}>
-                  <TableRow
-                    onClick={() => handleRowClick(importProduct.id)}
+          {/* Select phòng ban & loại sự kiện */}
+          <TextField
+            select
+            size="small"
+            label="Phòng ban"
+            value={dept}
+            onChange={(e) => setDept(e.target.value)}
+            sx={{ minWidth: 180 }}
+          >
+            {deptOptions.map((opt) => (
+              <MenuItem key={opt} value={opt}>
+                {opt}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            size="small"
+            label="Loại sự kiện"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            sx={{ minWidth: 180 }}
+          >
+            {typeOptions.map((opt) => (
+              <MenuItem key={opt} value={opt}>
+                {opt}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <Box sx={{ flex: 1 }} />
+
+          {/* Bộ lọc riêng: theo ngày tham chiếu & đang diễn ra */}
+          <TextField
+            size="small"
+            type="date"
+            label="Ngày tham chiếu"
+            InputLabelProps={{ shrink: true }}
+            value={refDay}
+            onChange={(e) => setRefDay(e.target.value || todayStr())}
+            sx={{ minWidth: 170 }}
+          />
+          <FormControlLabel
+            sx={{ ml: 1 }}
+            control={
+              <Switch
+                checked={onlyOngoing}
+                onChange={(e) => setOnlyOngoing(e.target.checked)}
+              />
+            }
+            label="Chỉ sự kiện đang diễn ra"
+          />
+          <IconButton onClick={fetchEvents} title="Tải lại">
+            <RefreshIcon />
+          </IconButton>
+          <Button variant="outlined" onClick={handleReset}>
+            XÓA LỌC
+          </Button>
+        </Stack>
+
+        {/* ======= HÀNG DƯỚI: Tìm kiếm theo tiêu đề ======= */}
+        <Box sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Tìm kiếm theo tiêu đề"
+            placeholder="Nhập từ khoá tiêu đề sự kiện…"
+            value={qTitle}
+            onChange={(e) => setQTitle(e.target.value)}
+          />
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* ======= Danh sách kết quả ======= */}
+        {filtered.length === 0 ? (
+          <Alert severity="info">
+            Không có sự kiện phù hợp tại thời điểm hiện tại của ngày đã chọn.
+          </Alert>
+        ) : (
+          <Stack spacing={1.5}>
+            {filtered
+              .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+              .map((ev) => {
+                const timeLabel = fmtTimeRange(ev.startDate, ev.endDate);
+                const deptLabel = ev.department || ev.category || "Khác";
+                const typeLabel = ev.type || "Sự kiện";
+                const status = (ev.status || "").toUpperCase();
+                const capacity =
+                  Number(ev.capacity) || Number(ev.totalSeats) || 0;
+                const registered = Math.min(
+                  Number(ev.registered) || Number(ev.seatsUsed) || 0,
+                  capacity || Number.MAX_SAFE_INTEGER
+                );
+                const progress =
+                  capacity > 0 ? Math.round((registered / capacity) * 100) : 0;
+                const key =
+                  ev.eventId ??
+                  ev.id ??
+                  ev.uuid ??
+                  `${ev.title}-${ev.startDate}`;
+
+                return (
+                  <Box
+                    key={key}
                     sx={{
-                      cursor: 'pointer',
-                      '&:hover': {
-                        backgroundColor: 'grey.50',
-                        transition: 'background-color 0.2s',
-                      },
-                      '& td': {
-                        py: 1.5,
-                        borderBottom: '1px solid',
-                        borderColor: 'grey.200',
-                      },
+                      p: 1.5,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 1.5,
                     }}
                   >
-                    <TableCell>{importProduct.id}</TableCell>
-                    <TableCell>{formatDate(importProduct.importDate)}</TableCell>
-                    <TableCell>{getTotalQuantity(importProduct.details)}</TableCell>
-                    <TableCell>
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditImport(importProduct.id);
-                        }}
-                        sx={{
-                          color: 'warning.main',
-                          '&:hover': { bgcolor: 'warning.light', transform: 'scale(1.1)' },
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteImport(importProduct.id);
-                        }}
-                        sx={{
-                          color: 'error.main',
-                          '&:hover': { bgcolor: 'error.light', transform: 'scale(1.1)' },
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={4}>
-                      <Collapse in={expandedId === importProduct.id} timeout="auto" unmountOnExit>
-                        <Box sx={{ margin: 1 }}>
-                          <Typography
-                            variant="subtitle1"
-                            gutterBottom
-                            sx={{
-                              fontWeight: 'medium',
-                              color: '#1a2820',
-                            }}
-                          >
-                            Chi tiết phiếu nhập hàng
-                          </Typography>
-                          <Table
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      alignItems={{ xs: "flex-start", sm: "center" }}
+                      justifyContent="space-between"
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        {ev.title || "—"}
+                      </Typography>
+                      <Stack direction="row" spacing={1}>
+                        <Chip size="small" label={deptLabel} />
+                        <Chip
+                          size="small"
+                          label={typeLabel}
+                          color="primary"
+                          variant="outlined"
+                        />
+                        {!!status && (
+                          <Chip
                             size="small"
-                            sx={{
-                              borderRadius: '8px',
-                              border: '1px solid',
-                              borderColor: 'grey.200',
-                            }}
-                          >
-                            <TableHead>
-                              <TableRow
-                                sx={{
-                                  backgroundColor: 'grey.100',
-                                  '& th': {
-                                    fontWeight: 'bold',
-                                    color: 'text.primary',
-                                    py: 1.5,
-                                    borderBottom: '1px solid',
-                                    borderColor: 'grey.300',
-                                  },
-                                }}
-                              >
-                                <TableCell>ID sản phẩm</TableCell>
-                                <TableCell>Tên sản phẩm</TableCell>
-                                <TableCell>Giá nhập</TableCell>
-                                <TableCell>Số lượng</TableCell>
-                                <TableCell>Nhà cung cấp</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {importProduct.details.map((item, index) => (
-                                <TableRow
-                                  key={index}
-                                  sx={{
-                                    '&:hover': {
-                                      backgroundColor: 'grey.50',
-                                      transition: 'background-color 0.2s',
-                                    },
-                                    '& td': {
-                                      py: 1,
-                                      borderBottom: '1px solid',
-                                      borderColor: 'grey.200',
-                                    },
-                                  }}
-                                >
-                                  <TableCell>{item.product.id}</TableCell>
-                                  <TableCell sx={{ fontWeight: 'medium' }}>
-                                    {item.product.name}
-                                  </TableCell>
-                                  <TableCell>{item.importPrice.toLocaleString()} VNĐ</TableCell>
-                                  <TableCell>{item.quantity}</TableCell>
-                                  <TableCell>{item.supplier.name}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </Box>
-                      </Collapse>
-                    </TableCell>
-                  </TableRow>
-                </React.Fragment>
-              ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                            label={status}
+                            color={
+                              status === "PUBLISHED" ? "success" : "warning"
+                            }
+                            variant="outlined"
+                          />
+                        )}
+                      </Stack>
+                    </Stack>
 
-      <TablePagination
-        rowsPerPageOptions={[6, 12, 24]}
-        component="div"
-        count={importProducts.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Số hàng mỗi trang:"
-        labelDisplayedRows={({ from, to, count }) => `${from}–${to} của ${count}`}
-        sx={{
-          mt: 2,
-          '& .MuiTablePagination-toolbar': {
-            backgroundColor: 'grey.50',
-            borderRadius: '8px',
-            py: 1,
-          },
-          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-            color: 'text.secondary',
-            fontWeight: 'medium',
-          },
-          '& .MuiTablePagination-actions button': {
-            borderRadius: '8px',
-            '&:hover': {
-              bgcolor: 'grey.200',
-            },
-          },
-        }}
-      />
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      sx={{ mt: 1 }}
+                      flexWrap="wrap"
+                    >
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <AccessTimeRounded fontSize="small" />
+                        <Typography variant="body2">{timeLabel}</Typography>
+                      </Stack>
+                      {ev.venue && (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <PlaceRounded fontSize="small" />
+                          <Typography variant="body2">{ev.venue}</Typography>
+                        </Stack>
+                      )}
+                      {ev.startDate && (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <CalendarMonthRounded fontSize="small" />
+                          <Typography variant="body2">
+                            {String(ev.startDate).slice(0, 10)}
+                          </Typography>
+                        </Stack>
+                      )}
+                    </Stack>
+
+                    {capacity > 0 && (
+                      <Box sx={{ mt: 1 }}>
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="caption" color="text.secondary">
+                            Đăng ký: {registered}/{capacity}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {progress}%
+                          </Typography>
+                        </Stack>
+                        <LinearProgress
+                          variant="determinate"
+                          value={progress}
+                          sx={{ height: 8, borderRadius: 1 }}
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
+          </Stack>
+        )}
+      </Paper>
     </Box>
   );
 }
-
-export default ImportProductList;

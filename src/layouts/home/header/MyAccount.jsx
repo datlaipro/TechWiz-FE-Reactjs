@@ -48,11 +48,6 @@ const buildHeaders = (tk) => ({
 });
 const { token, role, userId } = readAuth();
 
-const authHeaders = {
-  Accept: "application/json",
-  "Content-Type": "application/json; charset=UTF-8",
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-};
 /* ---------- Helpers: decode JWT & đọc localStorage ---------- */
 function b64urlDecode(str) {
   try {
@@ -156,6 +151,8 @@ export default function MyAccount() {
   const [{ isLoggedIn, user, accessToken }, setAuth] = useState(
     readAuthFromStorage()
   );
+  // URL ảnh QR được tạo từ blob
+  const [qrUrl, setQrUrl] = useState("");
 
   // ===== QR tickets =====
   const [tickets, setTickets] = useState([]);
@@ -212,7 +209,7 @@ export default function MyAccount() {
     };
   }
 
-  const { eventId, studentId } = readEventStudentSafe();
+  const { eventId, studentId } = readEventStudentSafe(); // lấy ra eventId, studentId
   if (eventId && studentId) {
     localStorage.setItem(REG_KEY, `${eventId}|${studentId}`);
   }
@@ -234,11 +231,6 @@ export default function MyAccount() {
   useEffect(() => {
     setAuth(readAuthFromStorage());
   }, []);
-  console.log("token", accessToken, "payload", {
-    eventId,
-    studentId,
-    size: 240,
-  });
 
   // ====== FIX: gọi API phát QR đúng chuẩn axios.post(url, data, config)
   const fetchTickets = async () => {
@@ -257,18 +249,54 @@ export default function MyAccount() {
       setErr("");
 
       // payload đúng theo BE yêu cầu
-      const body = { eventId, studentId, size: 240 };
 
       // *** QUAN TRỌNG: data và config tách riêng ***
       // const res = await axios.post(`${API_BASE}/api/qr/issue`, body, {
       //   headers: buildHeaders(accessToken),
       // });
-     const res = await axios.post(`${API_BASE}/api/qr/issue`, {
-        headers: buildHeaders(accessToken),body
+
+      const res = await fetch(`${API_BASE}/api/qr/issue`, {
+        method: "POST",
+        mode: "cors", // cho rõ ràng
+        headers: {
+          Authorization: `Bearer ${accessToken}`, // <-- nằm trong headers
+          "Content-Type": "application/json",
+          Accept: "image/png",
+        },
+        body: JSON.stringify({ eventId, studentId, size: 240 }),
+        
+      }
+    );
+      
+      // const res = await fetch(`${API_BASE}/api/qr/issue`, {
+      //   method: "POST",
+      //   headers: {
+      //     Authorization: `Bearer ${accessToken}`,
+      //     "Content-Type": "application/json",
+      //     Accept: "image/png",
+      //   },
+      //   body: JSON.stringify({ eventId, studentId, size: 240 }),
+      // });
+      const url = URL.createObjectURL(res.data);
+      setQrUrl(url);
+
+      setTickets((prev = []) => {
+        const item = {
+          id: `${eventId}-${studentId}`,
+          eventId,
+          studentId,
+          eventTitle: `Vé sự kiện #${eventId}`,
+          eventDate: null, // nếu có ngày từ BE thì set vào
+          venue: "",
+          department: "",
+          status: "CONFIRMED", // hoặc trạng thái bạn muốn
+          qrImageUrl: url, // QUAN TRỌNG: dùng trong UI
+        };
+        const rest = Array.isArray(prev)
+          ? prev.filter((x) => x?.id !== item.id)
+          : [];
+        return [item, ...rest];
       });
-      setTickets(
-        Array.isArray(res.data) ? res.data : [res.data].filter(Boolean)
-      );
     } catch (e) {
       const msg =
         e?.response?.data?.message ||
@@ -479,7 +507,7 @@ export default function MyAccount() {
           </Avatar>
           <Box>
             <Typography variant="h5" fontWeight={700}>
-              Tài khoản của tôi
+              My Account
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Vé sự kiện &amp; QR đã đăng ký – phục vụ check-in tại khu vực sự
