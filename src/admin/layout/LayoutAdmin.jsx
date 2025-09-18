@@ -1,40 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, Link } from 'react-router-dom';
-import { useTheme } from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import CssBaseline from '@mui/material/CssBaseline';
-import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import MenuIcon from '@mui/icons-material/Menu';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Tooltip from '@mui/material/Tooltip';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
-import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
-import StarOutlineOutlinedIcon from '@mui/icons-material/StarOutlineOutlined';
-import AdminAppBar from './AdminAppBar';
-import Slide from '@mui/material/Slide';
-import QrKit from './QrKit';
+import React, { useState, useEffect } from "react";
+import { Outlet, Link } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
+import Box from "@mui/material/Box";
+import CssBaseline from "@mui/material/CssBaseline";
+import Divider from "@mui/material/Divider";
+import Drawer from "@mui/material/Drawer";
+import IconButton from "@mui/material/IconButton";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import MenuIcon from "@mui/icons-material/Menu";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import Tooltip from "@mui/material/Tooltip";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import WarehouseOutlinedIcon from "@mui/icons-material/WarehouseOutlined";
+import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
+import StarOutlineOutlinedIcon from "@mui/icons-material/StarOutlineOutlined";
+import AdminAppBar from "./AdminAppBar";
+import Slide from "@mui/material/Slide";
+import QrKit from "./QrKit";
 const drawerWidth = 240;
 
 function LayoutAdmin() {
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < theme.breakpoints.values.md);
+  const [isMobile, setIsMobile] = useState(
+    window.innerWidth < theme.breakpoints.values.md
+  );
 
   // Theo dõi resize để điều chỉnh drawer
   useEffect(() => {
@@ -49,8 +51,8 @@ function LayoutAdmin() {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [theme.breakpoints.values.md]);
 
   const handleDrawerToggle = () => {
@@ -81,19 +83,33 @@ function LayoutAdmin() {
 
   // Menu cho Drawer tạm thời (mobile, 3 cột)
   const mobileMenu = (
-    <Grid container spacing={2} sx={{ p: 2, bgcolor: '#263238' }}>
-      {['Dashboard', 'Event', 'Event Posted', 'Order', 'User', 'Supplier', 'Maketing', 'Review','QR'].map((text, index) => {
+    <Grid container spacing={2} sx={{ p: 2, bgcolor: "#263238" }}>
+      {[
+        "Dashboard",
+        "Event",
+        "Event Posted",
+        "Order",
+        "User",
+        "Supplier",
+        "Maketing",
+        "Review",
+        "QR",
+        "EventsThisMonth",
+        "ApprovalQueue"
+      ].map((text, index) => {
         const paths = [
-          '/admin',
-          
-          '/admin/product',
-          '/admin/event-posted',
-          '/admin/order',
-          '/admin/user',
-          '/admin/supplier',
-          '/admin/discount',
-          '/admin/review',
-          '/admin/qr-kit',
+          "/admin",
+
+          "/admin/product",
+          "/admin/event-posted",
+          "/admin/order",
+          "/admin/user",
+          "/admin/supplier",
+          "/admin/discount",
+          "/admin/review",
+          "/admin/qr-kit",
+           "/admin/EventsThisMonth",
+           "/admin/ApprovalQueue"
         ];
         const allIcons = [...icons, ...icons2];
         return (
@@ -101,13 +117,13 @@ function LayoutAdmin() {
             <Paper
               sx={{
                 p: 1,
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                bgcolor: '#37474F',
-                '&:hover': {
-                  bgcolor: '#546E7A',
-                  transform: 'translateY(-2px)',
-                  transition: 'all 0.2s ease',
+                borderRadius: "8px",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                bgcolor: "#37474F",
+                "&:hover": {
+                  bgcolor: "#546E7A",
+                  transform: "translateY(-2px)",
+                  transition: "all 0.2s ease",
                 },
               }}
             >
@@ -115,17 +131,17 @@ function LayoutAdmin() {
                 component={Link}
                 to={paths[index]}
                 sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  color: '#CFD8DC',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  color: "#CFD8DC",
                 }}
               >
-                <ListItemIcon sx={{ color: '#CFD8DC', mb: 1 }}>
+                <ListItemIcon sx={{ color: "#CFD8DC", mb: 1 }}>
                   {allIcons[index % allIcons.length]}
                 </ListItemIcon>
-                <ListItemText primary={text} sx={{ color: '#CFD8DC' }} />
+                <ListItemText primary={text} sx={{ color: "#CFD8DC" }} />
               </ListItemButton>
             </Paper>
           </Grid>
@@ -138,19 +154,37 @@ function LayoutAdmin() {
   const desktopMenu = (
     <>
       <List>
-        {['Dashboard', 'Event', 'Event Posted', 'Order', 'User','QR'].map((text, index) => {
-          const paths = ['/admin', '/admin/events', '/admin/event-posted', '/admin/order', '/admin/user','/admin/qr-kit'];
+        {[
+          "Dashboard",
+          "Event",
+          "Event Posted",
+          "Order",
+          "User",
+          "QR",
+          "EventsThisMonth",
+          "ApprovalQueue"
+        ].map((text, index) => {
+          const paths = [
+            "/admin",
+            "/admin/events",
+            "/admin/event-posted",
+            "/admin/order",
+            "/admin/user",
+            "/admin/qr-kit",
+            "/admin/EventsThisMonth",
+             "/admin/ApprovalQueue"
+          ];
           return (
             <ListItem key={text} disablePadding>
               <Tooltip
-                title={drawerOpen ? '' : text}
+                title={drawerOpen ? "" : text}
                 placement="right"
                 arrow
                 sx={{
-                  '& .MuiTooltip-tooltip': {
-                    backgroundColor: '#455A64',
-                    color: '#FFFFFF',
-                    fontSize: '0.9rem',
+                  "& .MuiTooltip-tooltip": {
+                    backgroundColor: "#455A64",
+                    color: "#FFFFFF",
+                    fontSize: "0.9rem",
                   },
                 }}
               >
@@ -158,22 +192,22 @@ function LayoutAdmin() {
                   component={Link}
                   to={paths[index]}
                   sx={{
-                    justifyContent: drawerOpen ? 'initial' : 'center',
+                    justifyContent: drawerOpen ? "initial" : "center",
                     px: 2.5,
-                    '&:hover': {
-                      bgcolor: '#37474F',
-                      color: '#F5F5F5',
+                    "&:hover": {
+                      bgcolor: "#37474F",
+                      color: "#F5F5F5",
                     },
                   }}
                 >
                   <ListItemIcon
                     sx={{
                       minWidth: 0,
-                      mr: drawerOpen ? 3 : 'auto',
-                      justifyContent: 'center',
-                      color: '#CFD8DC',
-                      '&:hover': {
-                        color: '#F5F5F5',
+                      mr: drawerOpen ? 3 : "auto",
+                      justifyContent: "center",
+                      color: "#CFD8DC",
+                      "&:hover": {
+                        color: "#F5F5F5",
                       },
                     }}
                   >
@@ -183,9 +217,9 @@ function LayoutAdmin() {
                     primary={text}
                     sx={{
                       opacity: drawerOpen ? 1 : 0,
-                      color: '#CFD8DC',
-                      '&:hover': {
-                        color: '#F5F5F5',
+                      color: "#CFD8DC",
+                      "&:hover": {
+                        color: "#F5F5F5",
                       },
                     }}
                   />
@@ -195,21 +229,25 @@ function LayoutAdmin() {
           );
         })}
       </List>
-      <Divider sx={{ bgcolor: '#37474F' }} />
+      <Divider sx={{ bgcolor: "#37474F" }} />
       <List>
-        {['Supplier', 'Maketing', 'Review'].map((text, index) => {
-          const paths2 = ['/admin/supplier', '/admin/discount', '/admin/review'];
+        {["Supplier", "Maketing", "Review"].map((text, index) => {
+          const paths2 = [
+            "/admin/supplier",
+            "/admin/discount",
+            "/admin/review",
+          ];
           return (
             <ListItem key={text} disablePadding>
               <Tooltip
-                title={drawerOpen ? '' : text}
+                title={drawerOpen ? "" : text}
                 placement="right"
                 arrow
                 sx={{
-                  '& .MuiTooltip-tooltip': {
-                    backgroundColor: '#455A64',
-                    color: '#FFFFFF',
-                    fontSize: '0.9rem',
+                  "& .MuiTooltip-tooltip": {
+                    backgroundColor: "#455A64",
+                    color: "#FFFFFF",
+                    fontSize: "0.9rem",
                   },
                 }}
               >
@@ -217,22 +255,22 @@ function LayoutAdmin() {
                   component={Link}
                   to={paths2[index]}
                   sx={{
-                    justifyContent: drawerOpen ? 'initial' : 'center',
+                    justifyContent: drawerOpen ? "initial" : "center",
                     px: 2.5,
-                    '&:hover': {
-                      bgcolor: '#37474F',
-                      color: '#F5F5F5',
+                    "&:hover": {
+                      bgcolor: "#37474F",
+                      color: "#F5F5F5",
                     },
                   }}
                 >
                   <ListItemIcon
                     sx={{
                       minWidth: 0,
-                      mr: drawerOpen ? 3 : 'auto',
-                      justifyContent: 'center',
-                      color: '#CFD8DC',
-                      '&:hover': {
-                        color: '#F5F5F5',
+                      mr: drawerOpen ? 3 : "auto",
+                      justifyContent: "center",
+                      color: "#CFD8DC",
+                      "&:hover": {
+                        color: "#F5F5F5",
                       },
                     }}
                   >
@@ -242,9 +280,9 @@ function LayoutAdmin() {
                     primary={text}
                     sx={{
                       opacity: drawerOpen ? 1 : 0,
-                      color: '#CFD8DC',
-                      '&:hover': {
-                        color: '#F5F5F5',
+                      color: "#CFD8DC",
+                      "&:hover": {
+                        color: "#F5F5F5",
                       },
                     }}
                   />
@@ -258,7 +296,13 @@ function LayoutAdmin() {
   );
 
   const drawer = (
-    <div style={{ backgroundColor: '#263238', height: isMobile ? 'auto' : '100vh', overflow: 'auto' }}>
+    <div
+      style={{
+        backgroundColor: "#263238",
+        height: isMobile ? "auto" : "100vh",
+        overflow: "auto",
+      }}
+    >
       <Toolbar
         sx={{
           display: "flex", // Kích hoạt Flexbox
@@ -268,32 +312,41 @@ function LayoutAdmin() {
       >
         <IconButton
           color="inherit"
-          aria-label={drawerOpen ? 'close drawer' : 'open drawer'}
+          aria-label={drawerOpen ? "close drawer" : "open drawer"}
           edge="start"
           onClick={drawerOpen ? handleDrawerClose : handleDrawerOpen}
           sx={{
-            display: { xs: 'none', md: 'block' },
-            color: '#CFD8DC',
-            '&:hover': { bgcolor: '#37474F' },
+            display: { xs: "none", md: "block" },
+            color: "#CFD8DC",
+            "&:hover": { bgcolor: "#37474F" },
           }}
         >
           {drawerOpen ? (
-            <img src="https://pub-3d10e52fdf5d49fba5f48198b8864aa8.r2.dev/post/TECHWIZ%20LOGO.png" alt="SHOP" style={{ width: '120px', height: 'auto' }} />
+            <img
+              src="https://pub-3d10e52fdf5d49fba5f48198b8864aa8.r2.dev/post/TECHWIZ%20LOGO.png"
+              alt="SHOP"
+              style={{ width: "120px", height: "auto" }}
+            />
           ) : (
             <MenuIcon />
           )}
         </IconButton>
-        <Typography sx={{ display: { xs: 'block', md: drawerOpen ? 'none' : 'none' }, color: '#CFD8DC' }}>
+        <Typography
+          sx={{
+            display: { xs: "block", md: drawerOpen ? "none" : "none" },
+            color: "#CFD8DC",
+          }}
+        >
           Event
         </Typography>
       </Toolbar>
-      <Divider sx={{ bgcolor: '#37474F' }} />
+      <Divider sx={{ bgcolor: "#37474F" }} />
       {isMobile ? mobileMenu : desktopMenu}
     </div>
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <CssBaseline />
       <AdminAppBar
         drawerOpen={drawerOpen}
@@ -303,9 +356,11 @@ function LayoutAdmin() {
       <Box
         component="nav"
         sx={{
-          width: { md: drawerOpen ? drawerWidth : `calc(${theme.spacing(7)} + 1px)` },
+          width: {
+            md: drawerOpen ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`,
+          },
           flexShrink: { md: 0 },
-          transition: 'width 0.2s ease',
+          transition: "width 0.2s ease",
         }}
         aria-label="mailbox folders"
       >
@@ -318,13 +373,13 @@ function LayoutAdmin() {
             keepMounted: true,
           }}
           sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: '100%',
-              height: 'auto',
-              transition: 'transform 0.2s ease-in-out',
-              backgroundColor: '#263238',
+            display: { xs: "block", md: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: "100%",
+              height: "auto",
+              transition: "transform 0.2s ease-in-out",
+              backgroundColor: "#263238",
             },
           }}
         >
@@ -336,12 +391,14 @@ function LayoutAdmin() {
           variant="permanent"
           open={drawerOpen}
           sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerOpen ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`,
-              transition: 'width 0.2s ease',
-              backgroundColor: '#263238',
+            display: { xs: "none", md: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerOpen
+                ? drawerWidth
+                : `calc(${theme.spacing(7)} + 1px)`,
+              transition: "width 0.2s ease",
+              backgroundColor: "#263238",
             },
           }}
         >
@@ -355,9 +412,13 @@ function LayoutAdmin() {
           mt: 3,
           p: 3,
           pt: 8,
-          width: { md: `calc(100% - ${drawerOpen ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`})` },
-          transition: 'width 0.2s ease',
-          bgcolor: 'white', // Nền trắng cho nội dung chính
+          width: {
+            md: `calc(100% - ${
+              drawerOpen ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`
+            })`,
+          },
+          transition: "width 0.2s ease",
+          bgcolor: "white", // Nền trắng cho nội dung chính
         }}
       >
         <Outlet />

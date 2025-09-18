@@ -4,6 +4,7 @@ import './App.css';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState } from "react";
 import ProtectedRoute from "./layouts/protected/ProtectedRoute";
 import UserModal from "./layouts/home/header/UserModal";
 // import { CartProvider } from './components/action/CartContext';
@@ -53,21 +54,25 @@ import MyAccount from "./layouts/home/header/MyAccount";
 import QrKit from "./admin/layout/QrKit";
 import AdminEventEdit from "./admin/dashboard/AdminEventEdit";
 import AdminEventView from "./admin/dashboard/AdminEventView";
+import { EventProvider } from "./EventContext";
+import ApprovalQueue from "./admin/dashboard/ApprovalQueue";
+import EventsThisMonthPanel from "./admin/dashboard/EventsThisMonthPanel";
 // Thành phần mới để chứa nội dung của App
 function AppContent() {
   const { snackbar, closeSnackbar } = useAuth();
 
   return (
     <>
+
       {/* <AuthNavigation /> */}
       <Routes>
         <Route path="/" element={<LayoutHome />}>
-        
+
           {/* Các route công khai */}
           <Route index element={<Home />} />
           <Route path="about" element={<About />} />
           <Route path="my-account" element={<MyAccount />} />
-          
+
           <Route path="allevent" element={<ShopPage />} />
           <Route path="blog" element={<BlogPage />} />
           <Route path="contact" element={<ContactPage />} />
@@ -96,7 +101,7 @@ function AppContent() {
         {/* Các route admin yêu cầu đăng nhập và ROLE_ADMIN */}
         <Route
           path="/admin"
-          
+
           element={
             <ProtectedRoute requireAdmin={true}>
               <LayoutAdmin />
@@ -106,11 +111,13 @@ function AppContent() {
           <Route index element={<Dashboard />} />
           <Route path="events" element={<ProductList />} />
           <Route path="qr-kit" element={<QrKit />} />
+          <Route path="EventsThisMonth" element={<EventsThisMonthPanel />} />
+          <Route path="ApprovalQueue" element={<ApprovalQueue />} />
 
           <Route path="addevent" element={<AddProduct />} />
           <Route path="editevent/:id" element={<EditProduct />} />
           <Route path="eventsview/:id" element={<ProductView />} />
-           <Route path="adminview/:id" element={<AdminEventView />} />
+          <Route path="adminview/:id" element={<AdminEventView />} />
           <Route path="editview/:id" element={<AdminEventEdit />} />
           <Route path="order" element={<OrderList />} />
           <Route path="edit-order/:orderId" element={<EditOrder />} />
@@ -144,21 +151,25 @@ function AppContent() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
     </>
   );
 }
-
 function App() {
+
+
   return (
-    <ThemeProvider theme={theme}>
-      <AuthProvider>
-        {/* <CartProvider> */}
+    <EventProvider>
+      <ThemeProvider theme={theme}>
+        <AuthProvider>
+          {/* <CartProvider> */}
           <BrowserRouter>
             <AppContent />
           </BrowserRouter>
-        {/* </CartProvider> */}
-      </AuthProvider>
-    </ThemeProvider>
+          {/* </CartProvider> */}
+        </AuthProvider>
+      </ThemeProvider>
+    </EventProvider>
   );
 }
 

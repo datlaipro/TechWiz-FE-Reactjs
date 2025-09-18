@@ -24,23 +24,23 @@ import {
   PendingActions,
   WarningAmberRounded,
 } from "@mui/icons-material";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import EditIcon from "@mui/icons-material/Edit";
-import { DataGrid } from "@mui/x-data-grid";
-
+import { useEventContext } from "../../EventContext";
+import readAuth from "../auth/getToken";
 /* ========================= Component ========================= */
-const fmtDate = (s) => (s ? String(s).slice(0, 10) : ""); // "2025-09-12"
-const fmtTime = (s) => (s ? String(s).slice(0, 5) : ""); // "08:30"
-const normStatus = (s) => String(s || "").toUpperCase();
+
 function Dashboard() {
-  const navigate = useNavigate();
-  const handleView = (eventId) => navigate(`/admin/adminview/${eventId}`);
-  const handleEdit = (eventId) => navigate(`/admin/editview/${eventId}`);
-  /* ---------- EVENTS & NEWS (Giai đoạn 1) ---------- */
+  const { token, role, userId } = readAuth();
+  const authHeaders = {
+    Accept: "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  /* ---------- EVENTS ONLY (đã bỏ News/Pending Queue) ---------- */
   const [events, setEvents] = useState([]);
-  const [news, setNews] = useState([]);
+  const [pendingEvent, setPendingEvent] = useState([]);
   const [evLoading, setEvLoading] = useState(true);
   const [evError, setEvError] = useState("");
+  const [qTitle, setQTitle] = useState("");
+  const PENDING_URL = "http://localhost:6868/api/admin/events/pending-approve";
 
   // Bộ lọc giai đoạn 1
   const [filters, setFilters] = useState({
@@ -52,85 +52,55 @@ function Dashboard() {
 
   // === Auth helpers ===
   const STORAGE_KEY = "authState_v1";
-  function readAuth() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { token: null, role: null };
-      const obj = JSON.parse(raw);
-      const token = obj.accessToken || obj.token || obj.jwt || null;
-      let role =
-        obj.role || (Array.isArray(obj.roles) ? obj.roles[0] : null) || null;
+  // function readAuth() {
+  //   try {
+  //     const raw = localStorage.getItem(STORAGE_KEY);
+  //     if (!raw) return { token: null, role: null };
+  //     const obj = JSON.parse(raw);
+  //     const token = obj.accessToken || obj.token || obj.jwt || null;
+  //     let role =
+  //       obj.role || (Array.isArray(obj.roles) ? obj.roles[0] : null) || null;
 
-      // fallback lấy role từ JWT (nếu có)
-      if (!role && token && token.split(".").length === 3) {
-        try {
-          const payload = JSON.parse(
-            atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
-          );
-          role =
-            payload.role ||
-            (Array.isArray(payload.roles) ? payload.roles[0] : null) ||
-            (Array.isArray(payload.authorities)
-              ? payload.authorities[0]
-              : null) ||
-            null;
-        } catch {}
-      }
-      return { token, role };
-    } catch {
-      return { token: null, role: null };
-    }
-  }
+  //     if (!role && token && token.split(".").length === 3) {
+  //       try {
+  //         const payload = JSON.parse(
+  //           atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+  //         );
+  //         role =
+  //           payload.role ||
+  //           (Array.isArray(payload.roles) ? payload.roles[0] : null) ||
+  //           (Array.isArray(payload.authorities)
+  //             ? payload.authorities[0]
+  //             : null) ||
+  //           null;
+  //       } catch {}
+  //     }
+  //     return { token, role };
+  //   } catch {
+  //     return { token: null, role: null };
+  //   }
+  // }
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const { token } = readAuth(); // đã có helper này ở trên
-        const authHeaders = {
-          Accept: "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        };
-
-        // 2 endpoint KHÁC NHAU
         const EVENTS_URL = "http://localhost:6868/api/events";
-        const PENDING_URL =
-          "http://localhost:6868/api/admin/events/pending-approve";
+        const res = await fetch(EVENTS_URL, {
+          method: "GET",
+          headers: authHeaders,
+        });
 
-        const [eventsRes, pendingRes] = await Promise.allSettled([
-          fetch(EVENTS_URL, {
-            method: "GET",
-            headers: authHeaders /*, credentials:"include"*/,
-          }),
-          fetch(PENDING_URL, {
-            method: "GET",
-            headers: authHeaders /*, credentials:"include"*/,
-          }),
-        ]);
-
-        let evData = []; // lưu danh sach sự kiện đang diễn ra
-        let newData = [];
-
-        if (eventsRes.status === "fulfilled" && eventsRes.value.ok) {
-          evData = await eventsRes.value.json();
-        } else if (eventsRes.status === "rejected") {
-          console.warn("Fetch events failed:", eventsRes.reason);
-        }
-
-        if (pendingRes.status === "fulfilled" && pendingRes.value.ok) {
-          newData = await pendingRes.value.json();
-        } else if (pendingRes.status === "rejected") {
-          console.warn("Fetch pending-approve failed:", pendingRes.reason);
+        let evData = [];
+        if (res.ok) {
+          evData = await res.json();
         }
 
         if (!Array.isArray(evData)) evData = [];
-        if (!Array.isArray(newData)) newData = [];
-
         setEvents(evData);
-        setNews(newData);
         setEvLoading(false);
       } catch (e) {
         console.error("Events Error:", e);
-        setEvError("Không thể tải dữ liệu sự kiện/tin tức");
+        setEvError("Không thể tải dữ liệu sự kiện");
         setEvLoading(false);
       }
     };
@@ -167,29 +137,44 @@ function Dashboard() {
     [events]
   );
   const typeOptions = useMemo(
-    () => [
-      "Tất cả",
-      ...Array.from(new Set(events.map((e) => e.type || "Khác"))),
-    ],
-    [events]
+    () => ["Tất cả", "Workshop", "Sports", "Cultural", "Technical"],
+    []
   );
 
   // Áp bộ lọc
   const filteredEvents = useMemo(() => {
+    const normalize = (s) =>
+      String(s || "")
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .toLowerCase();
+
+    const q = normalize(qTitle.trim());
+
     return events.filter((e) => {
-      const okDept =
-        filters.dept === "Tất cả" || (e.department || "Khác") === filters.dept;
-      const okType =
-        filters.type === "Tất cả" || (e.type || "Khác") === filters.type;
+      const evDept = e.department || "Khác";
+      const evCategory = e.category || e.type || "Khác";
+
+      const okDept = filters.dept === "Tất cả" || evDept === filters.dept;
+      const okType = filters.type === "Tất cả" || evCategory === filters.type;
       const okDate = isInRange(
         e.startDate,
         e.endDate,
         filters.startDate,
         filters.endDate
       );
-      return okDept && okType && okDate;
+      const okTitle = !q || normalize(e.title).includes(q);
+
+      return okDept && okType && okDate && okTitle;
     });
-  }, [events, filters]);
+  }, [
+    events,
+    filters.dept,
+    filters.type,
+    filters.startDate,
+    filters.endDate,
+    qTitle,
+  ]);
 
   // Group theo ngày cho "Calendar List"
   const eventsByDay = useMemo(() => {
@@ -209,43 +194,40 @@ function Dashboard() {
   }, [filteredEvents]);
 
   // Metrics Giai đoạn 1
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-    23,
-    59,
-    59
+  const { setEventsThisMonth } = useEventContext();
+  const [monthStartKey, monthEndKey] = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return [sameDayKey(start), sameDayKey(end)];
+  }, []);
+
+  const eventsThisMonth = useMemo(
+    () =>
+      (events ?? []).filter((e) =>
+        isInRange(e.startDate, e.endDate, monthStartKey, monthEndKey)
+      ).length,
+    [events, monthStartKey, monthEndKey]
   );
 
-  const eventsThisMonth = events.filter((e) =>
-    isInRange(
-      e.startDate,
-      e.endDate,
-      sameDayKey(monthStart),
-      sameDayKey(monthEnd)
-    )
-  ).length;
+  useEffect(() => {
+    const list = (events ?? []).filter((e) =>
+      isInRange(e.startDate, e.endDate, monthStartKey, monthEndKey)
+    );
+    setEventsThisMonth(list);
+  }, [events, monthStartKey, monthEndKey, setEventsThisMonth]);
 
-// 🟩 ĐẾM SỰ KIỆN ĐANG DIỄN RA TẠI THỜI ĐIỂM HIỆN TẠI
- const ongoingNowCount = events.filter((e) => {
-   const s = parseISO(e.startDate);
-   const ee = parseISO(e.endDate) || s; // nếu không có endDate thì coi kết thúc = startDate
-   return s && ee && s <= now && now <= ee;
- }).length;
-
-  const pendingEvents = news.filter(
-    (e) =>
-      (e.status || "").toUpperCase() === "IN_REVIEW" ||
-      (e.status || "").toUpperCase() === "PENDING_APPROVAL"
-  ).length;
-  // const pendingNews = news.filter(
-  //   (n) =>
-  //     (n.status || "").toUpperCase() === "IN_REVIEW" ||
-  //     (n.status || "").toUpperCase() === "PENDING"
-  // ).length;
+  // 🟩 ĐẾM SỰ KIỆN ĐANG DIỄN RA TRONG NGÀY (giữ nguyên như bạn đang dùng)
+  const ongoingNowCount = events.filter((e) => {
+    const eventNow = parseISO(e.date);
+    const dayNow = new Date();
+    if (!eventNow) return false;
+    return (
+      dayNow.getFullYear() === eventNow.getFullYear() &&
+      dayNow.getMonth() === eventNow.getMonth() &&
+      dayNow.getDate() === eventNow.getDate()
+    );
+  }).length;
 
   // Đếm conflict đơn giản: cùng địa điểm & trùng thời gian
   const conflictCount = useMemo(() => {
@@ -266,61 +248,28 @@ function Dashboard() {
     return c;
   }, [events]);
 
-  // Approval Queue rows (events + news)
-  // Approval Queue rows (chỉ sự kiện pending từ state `news`)
-  const [queueRows, setQueueRows] = useState([]);
-
   useEffect(() => {
-    const rows = (news || [])
-      .map((e) => {
-        const idRaw = e.eventId ?? e.id ?? e.uuid;
-        if (idRaw == null) return null;
+    const fetchPendingEvents = async () => {
+      const res = await fetch(PENDING_URL, {
+        method: "GET",
+        headers: authHeaders,
+      });
+      let pendingData = [];
+      if (res.ok) {
+        pendingData = await res.json();
+      }
+      if (!Array.isArray(pendingData)) pendingData = [];
+      setPendingEvent(pendingData);
+    };
 
-        const start = e.startDate ?? e.date ?? "";
-        const end = e.endDate ?? e.date ?? "";
-        const time = fmtTime(e.time);
-        const scheduled =
-          start && end && start !== end
-            ? `${fmtDate(start)} → ${fmtDate(end)}${time ? ` ${time}` : ""}`
-            : `${fmtDate(start || end)}${time ? ` ${time}` : ""}`;
+    fetchPendingEvents();
+  }, []);
 
-        return {
-          id: `EVT-${idRaw}`,
-          type: "Sự kiện",
-          eventId: idRaw, // 👈 thêm trường số để gọi API
-          title: e.title || "—",
-          // 🔻 đổi từ department/faculty/... sang category
-          department: e.category || "—",
-          status: normStatus(e.status || "PENDING_APPROVAL"),
-          scheduledAt: scheduled,
-          venue: e.venue || "",
-        };
-      })
-      .filter(Boolean);
-
-    setQueueRows(rows);
-  }, [news]);
-  const { token } = readAuth(); // đã có helper này ở trên
-  const authHeaders = {
-    Accept: "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-  const handleApprove = (eventId) => {
-    fetch(`http://localhost:6868/api/admin/events/${eventId}/approve`, {
-      method: "POST",
-      headers: authHeaders, // phải nằm trong object options
-    });
-    setQueueRows((prev) => prev.filter((r) => r.eventId !== eventId));
-  }; // fake}
-  const handleReject = (eventId) => {
-    fetch(`http://localhost:6868/api/admin/events/${eventId}/reject`, {
-      method: "POST",
-      headers: authHeaders, // phải nằm trong object options
-    });
-    setQueueRows((prev) => prev.filter((r) => r.eventId !== eventId));
-  };
-  // ;}
-
+  const pendingEvents = pendingEvent.filter(
+    (e) =>
+      (e.status || "").toUpperCase() === "IN_REVIEW" ||
+      (e.status || "").toUpperCase() === "PENDING_APPROVAL"
+  ).length;
   /* ---------- Loading & Error ---------- */
   if (evLoading) {
     return (
@@ -337,13 +286,6 @@ function Dashboard() {
           ))}
         </Grid>
         <Grid container spacing={2} sx={{ mt: 2 }}>
-          <Grid item xs={12}>
-            <Skeleton
-              variant="rectangular"
-              height={420}
-              sx={{ borderRadius: "12px" }}
-            />
-          </Grid>
           <Grid item xs={12}>
             <Skeleton
               variant="rectangular"
@@ -368,34 +310,44 @@ function Dashboard() {
 
   /* ========================= Render ========================= */
   return (
-    <Box sx={{ mt: 1, px: { xs: 1, sm: 2 }, bgcolor: "grey.50" ,cursor:"pointer"}}>
-      {/* TOP: KPI Sự kiện & Tin tức (to gấp đôi) */}
+    <Box
+      sx={{
+        mt: 1,
+        px: { xs: 1, sm: 2 },
+        bgcolor: "grey.50",
+        cursor: "pointer",
+      }}
+    >
+      {/* TOP: KPI (đã bỏ KPI Pending Approval) */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <KpiCard
+          link={"/admin/EventsThisMonth"}
           large
-          title="Events of the month"// sự kiện trong tháng (hiển thị ra sự kiện đã được duyệt )
+          title="Events of the month"
           value={eventsThisMonth}
           icon={<CalendarMonthRounded sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)"
         />
         <KpiCard
-        link={'/admin/event-posted'}
+          link={"/admin/event-posted"}
           large
-          title="Event posted"// sự kiện đăng diễn ra 
+          title="Event posted"
           value={ongoingNowCount}
           icon={<Article sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #00897b 0%, #26a69a 100%)"
         />
         <KpiCard
+          link={"/admin/ApprovalQueue"}
           large
-          title="Pending approval (Event)"// chờ duyệt sự kiện 
+          title="Pending approval (Event)" // chờ duyệt sự kiện
           value={`${pendingEvents}`}
           icon={<PendingActions sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #5e35b1 0%, #9575cd 100%)"
         />
+
         <KpiCard
           large
-          title="Number of subscribers"// số lượng người đăng kí 
+          title="Number of subscribers"
           value={conflictCount}
           icon={<WarningAmberRounded sx={{ fontSize: 64 }} />}
           gradient="linear-gradient(135deg, #f57c00 0%, #ffb74d 100%)"
@@ -415,6 +367,16 @@ function Dashboard() {
               Bộ lọc sự kiện
             </Typography>
           </Stack>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Tìm kiếm theo tiêu đề"
+              placeholder="Nhập từ khoá tiêu đề sự kiện…"
+              value={qTitle}
+              onChange={(e) => setQTitle(e.target.value)}
+            />
+          </Box>
           <Box sx={{ flex: 1 }} />
           <TextField
             select
@@ -484,13 +446,12 @@ function Dashboard() {
         </Stack>
       </Paper>
 
-      {/* Lưới: Calendar List (trái) + Approval Queue (phải) */}
+      {/* Calendar List */}
       <Grid container spacing={2}>
-        {/* Calendar List */}
         <Grid item xs={12}>
           <Paper sx={paperCardSx}>
             <Typography variant="h6" sx={cardTitleSx}>
-              Lịch sự kiện 
+              Lịch sự kiện
             </Typography>
             {eventsByDay.length === 0 ? (
               <Alert severity="info">Không có sự kiện phù hợp bộ lọc</Alert>
@@ -564,7 +525,9 @@ function Dashboard() {
                               <Stack direction="row" spacing={1}>
                                 <Chip
                                   size="small"
-                                  label={ev.department || "Khác"}
+                                  label={ev.category || ev.type || "Khác"}
+                                  color="info"
+                                  variant="outlined"
                                 />
                                 <Chip
                                   size="small"
@@ -650,84 +613,6 @@ function Dashboard() {
             )}
           </Paper>
         </Grid>
-
-        {/* Approval Queue */}
-        <Grid item xs={12}>
-          <Paper sx={paperCardSx}>
-            <Typography variant="h6" sx={cardTitleSx}>
-              Hàng chờ duyệt
-            </Typography>
-            <Box sx={{ height: 420 }}>
-              <DataGrid
-                rows={queueRows}
-                columns={[
-                  { field: "type", headerName: "Loại", width: 90 },
-                  {
-                    field: "title",
-                    headerName: "Tiêu đề",
-                    flex: 1,
-                    minWidth: 160,
-                  },
-                  { field: "department", headerName: "Phòng ban", width: 120 },
-                  {
-                    field: "status",
-                    headerName: "Trạng thái",
-                    width: 120,
-                    renderCell: (p) => (
-                      <Chip
-                        size="small"
-                        label={(p.value || "").toUpperCase()}
-                        color={
-                          (p.value || "").toUpperCase() === "PENDING"
-                            ? "warning"
-                            : "info"
-                        }
-                        variant="outlined"
-                      />
-                    ),
-                  },
-                  { field: "scheduledAt", headerName: "Lịch", width: 120 },
-                  {
-                    field: "actions",
-                    headerName: "Thao tác",
-                    width: 200,
-                    sortable: false,
-                    renderCell: (p) => (
-                      <Stack direction="row" spacing={1}>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<VisibilityIcon />}
-                          onClick={() => handleView(p.row.eventId)}
-                        >
-                          Xem
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<EditIcon />}
-                          onClick={() => handleEdit(p.row.eventId)}
-                        >
-                          Sửa
-                        </Button>
-                      </Stack>
-                    ),
-                  },
-                ]}
-                hideFooterSelectedRowCount
-                pageSizeOptions={[5, 10]}
-                initialState={{
-                  pagination: { paginationModel: { pageSize: 5, page: 0 } },
-                }}
-              />
-            </Box>
-            <Divider sx={{ my: 1.5 }} />
-            <Typography variant="body2" color="text.secondary">
-              *Thao tác duyệt/hủy hiện chỉ cập nhật UI. Khi có API, gọi endpoint
-              tương ứng rồi refetch.
-            </Typography>
-          </Paper>
-        </Grid>
       </Grid>
     </Box>
   );
@@ -749,14 +634,18 @@ const paperCardSx = {
 
 const cardTitleSx = { fontWeight: "bold", color: "text.primary", mb: 1.5 };
 
-function KpiCard({ title, value, icon, gradient, large,link }) {
+function KpiCard({ title, value, icon, gradient, large, link }) {
   const navigate = useNavigate();
   return (
-    <Grid item xs={12} sm={6} md={3} onClick={()=>{
-      navigate(link)
-     
-    }}>
-      
+    <Grid
+      item
+      xs={12}
+      sm={6}
+      md={3}
+      onClick={() => {
+        if (link) navigate(link);
+      }}
+    >
       <Paper
         sx={{
           p: large ? 3 : 2,
@@ -774,7 +663,6 @@ function KpiCard({ title, value, icon, gradient, large,link }) {
           },
         }}
       >
-        
         <Box sx={{ mr: 2 }}>{icon}</Box>
         <Box>
           <Typography
@@ -790,127 +678,6 @@ function KpiCard({ title, value, icon, gradient, large,link }) {
       </Paper>
     </Grid>
   );
-}
-
-/* ====================== Demo Data (fallback) ====================== */
-function demoEvents() {
-  const today = new Date();
-  const iso = (d) => d.toISOString().slice(0, 19);
-  const d = (offsetDay, sh, sm, eh, em) => {
-    const s = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate() + offsetDay,
-      sh,
-      sm,
-      0
-    );
-    const e = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate() + offsetDay,
-      eh,
-      em,
-      0
-    );
-    return [iso(s), iso(e)];
-  };
-  const [s1, e1] = d(0, 9, 0, 11, 0);
-  const [s2, e2] = d(1, 14, 0, 16, 0);
-  const [s3, e3] = d(1, 9, 30, 11, 30);
-  const [s4, e4] = d(2, 18, 0, 20, 0);
-  const [s5, e5] = d(0, 10, 0, 12, 0); // conflict venue C101
-
-  return [
-    {
-      id: 1,
-      title: "Workshop React cơ bản",
-      department: "Khoa CNTT",
-      type: "Workshop",
-      status: "PUBLISHED",
-      startDate: s1,
-      endDate: e1,
-      venue: "A201",
-      capacity: 120,
-      registered: 76,
-    },
-    {
-      id: 2,
-      title: "Hội thảo AI & Data",
-      department: "Khoa CNTT",
-      type: "Hội thảo",
-      status: "IN_REVIEW",
-      startDate: s2,
-      endDate: e2,
-      venue: "Hall 1",
-      capacity: 300,
-      registered: 210,
-    },
-    {
-      id: 3,
-      title: "Cuộc thi Học thuật",
-      department: "Khoa Kinh tế",
-      type: "Cuộc thi",
-      status: "PENDING",
-      startDate: s3,
-      endDate: e3,
-      venue: "C101",
-      capacity: 80,
-      registered: 80,
-    },
-    {
-      id: 4,
-      title: "Talkshow Khởi nghiệp",
-      department: "Phòng CTSV",
-      type: "Talkshow",
-      status: "PENDING",
-      startDate: s4,
-      endDate: e4,
-      venue: "Sân khấu trung tâm",
-      capacity: 500,
-      registered: 320,
-    },
-    {
-      id: 5,
-      title: "Seminar Blockchain",
-      department: "Khoa CNTT",
-      type: "Seminar",
-      status: "PUBLISHED",
-      startDate: s5,
-      endDate: e5,
-      venue: "C101",
-      capacity: 60,
-      registered: 45,
-    },
-  ];
-}
-
-function demoNews() {
-  const now = new Date();
-  const iso = (d) => d.toISOString().slice(0, 19);
-  return [
-    {
-      id: 101,
-      title: "Thông báo lịch học tuần này",
-      department: "Phòng Đào tạo",
-      status: "PUBLISHED",
-      publishAt: iso(now),
-    },
-    {
-      id: 102,
-      title: "Mời tham gia hội thảo AI",
-      department: "Khoa CNTT",
-      status: "IN_REVIEW",
-      publishAt: iso(new Date(now.getTime() + 86400000)),
-    },
-    {
-      id: 103,
-      title: "Tổng kết cuộc thi nghiên cứu khoa học",
-      department: "Phòng KHCN",
-      status: "PENDING",
-      publishAt: iso(new Date(now.getTime() + 2 * 86400000)),
-    },
-  ];
 }
 
 export default Dashboard;

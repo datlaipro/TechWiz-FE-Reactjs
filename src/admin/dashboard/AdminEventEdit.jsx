@@ -244,7 +244,7 @@ function AdminEventEdit() {
         return;
       }
       setOpenConfirmDialog(false);
-      navigate("/admin/product");
+      navigate("/admin/ApprovalQueue");
     } catch (err) {
       console.error("Error:", err);
       setError("Lỗi khi cập nhật sự kiện");
@@ -673,6 +673,7 @@ function AdminEventEdit() {
               type="submit"
               variant="contained"
               color="primary"
+              // onClick={() => navigate("/admin/ApprovalQueue")}
               sx={buttonPrimarySx}
             >
               Lưu
@@ -680,14 +681,14 @@ function AdminEventEdit() {
 
             <Button
               variant="outlined"
-              onClick={() => navigate("/admin/product")}
+              onClick={() => navigate("/admin/ApprovalQueue")}
               sx={buttonOutlineSx}
             >
               Hủy
             </Button>
 
             {/* Duyệt / Từ chối ngay trong trang Sửa */}
-            <Button
+            {/* <Button
               variant="contained"
               color="success"
               startIcon={<CheckCircleRoundedIcon />}
@@ -710,7 +711,7 @@ function AdminEventEdit() {
               }
             >
               Xóa
-            </Button>
+            </Button> */}
           </Box>
         </Box>
 

@@ -180,7 +180,7 @@ const EventCard = ({ event }) => {
             variant="contained"
             onClick={() => navigate(event.link)}
           >
-            REGISTER
+            Visit Now
           </Button>
         )}
       </Box>

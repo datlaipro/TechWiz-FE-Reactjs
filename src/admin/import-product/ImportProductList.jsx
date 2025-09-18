@@ -22,6 +22,10 @@ import CalendarMonthRounded from "@mui/icons-material/CalendarMonthRounded";
 import AccessTimeRounded from "@mui/icons-material/AccessTimeRounded";
 import PlaceRounded from "@mui/icons-material/PlaceRounded";
 import FilterAlt from "@mui/icons-material/FilterAlt";
+import { useEventContext } from "../../EventContext";
+import { Tooltip } from "@mui/material";
+import ArrowBackIosNew from "@mui/icons-material/ArrowBackIosNew";
+import { useNavigate } from "react-router-dom";
 
 const EVENTS_URL = "http://localhost:6868/api/events";
 const STORAGE_KEY = "authState_v1";
@@ -50,7 +54,6 @@ const paperCardSx = {
   },
 };
 
-const cardTitleSx = { fontWeight: "bold", color: "text.primary" };
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const parseISO = (s) => (s ? new Date(s) : null);
@@ -58,15 +61,19 @@ const parseISO = (s) => (s ? new Date(s) : null);
 function isOngoingAt(ev, refDayStr, now = new Date()) {
   // hàm lấy ra thời gian hiện tại
   if (!ev?.startDate) return false;
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  const refDay = refDayStr || todayStr();
-  const refTs = new Date(`${refDay}T${hh}:${mm}:00`);
-  const s = parseISO(ev.startDate); // chuyển chuỗi ngày giờ sang
-  const e = parseISO(ev.endDate) || s; // định dạng Date
-  if (!s) return false;
 
-  return s <= refTs && refTs <= e;
+  const refDay = parseISO(refDayStr);
+ 
+  const dayNow = parseISO(ev.date);
+  if (!dayNow) return false;
+
+  // return s <= refTs && refTs <= e;
+  return (
+    // trả về true khi ngày diễn ra sự kiện trùng với ngày hiện tại
+    dayNow.getFullYear() === refDay.getFullYear() &&
+    dayNow.getMonth() === refDay.getMonth() &&
+    dayNow.getDate() === refDay.getDate()
+  );
 }
 
 function fmtTimeRange(s, e) {
@@ -83,11 +90,11 @@ export default function OngoingEvents() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-
   // ===== Bộ lọc theo ảnh (KHÔNG có khoảng ngày) =====
   const [dept, setDept] = useState("Tất cả");
   const [type, setType] = useState("Tất cả");
   const [qTitle, setQTitle] = useState("");
+  const [cat, setCat] = useState("Tất cả"); // thêm bộ lọc theo thể loại
 
   // ===== Bộ lọc đặc thù: theo "ngày tham chiếu" & "đang diễn ra" =====
   const [refDay, setRefDay] = useState(todayStr());
@@ -120,23 +127,23 @@ export default function OngoingEvents() {
       setLoading(false);
     }
   };
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
-  // Options cho Select
-  const deptOptions = useMemo(() => {
-    const s = new Set(["Tất cả"]);
-    (events || []).forEach((e) => s.add(e.department || e.category || "Khác"));
-    return Array.from(s);
-  }, [events]);
+
 
   const typeOptions = useMemo(() => {
     const s = new Set(["Tất cả"]);
     (events || []).forEach((e) => s.add(e.type || "Khác"));
     return Array.from(s);
   }, [events]);
+  const categoryOptions = useMemo(
+    () => ["Tất cả", "Workshop", "Sports", "Cultural", "Technical"],
+    []
+  );
 
   // Áp tất cả điều kiện lọc
   const filtered = useMemo(() => {
@@ -144,7 +151,7 @@ export default function OngoingEvents() {
     if (onlyOngoing) {
       const now = new Date();
       void tick;
-      base = events.filter((ev) => isOngoingAt(ev, refDay, now));// lọc ra những ngày thỏa điều kiện starday <= ngày hiện tại <=nday
+      base = events.filter((ev) => isOngoingAt(ev, refDay, now)); // lọc ra những ngày thỏa điều kiện starday <= ngày hiện tại <=nday
     } else {
       // Nếu tắt "đang diễn ra": hiển thị các sự kiện có giao với ngày refDay
       const startDay = new Date(`${refDay}T00:00:00`);
@@ -160,23 +167,32 @@ export default function OngoingEvents() {
     const q = qTitle.trim().toLowerCase();
     return base.filter((ev) => {
       const evDept = ev.department || ev.category || "Khác";
+      const evCat = ev.category || "";
       const evType = ev.type || "Khác";
-      const okDept = dept === "Tất cả" || evDept === dept;
+      const okDept =
+        dept === "Tất cả" ||
+        evDept === dept ||
+        (dept === "Khác" && !ev.department);
       const okType = type === "Tất cả" || evType === type;
+      const okCat =
+        cat === "Tất cả" || evCat.toLowerCase() === cat.toLowerCase();
       const okTitle =
         !q ||
         String(ev.title || "")
           .toLowerCase()
           .includes(q);
-      return okDept && okType && okTitle;
+
+      return okDept && okType && okCat && okTitle;
     });
-  }, [events, onlyOngoing, refDay, tick, dept, type, qTitle]);
+  }, [events, onlyOngoing, refDay, tick, dept, type, qTitle, cat]);
 
   const handleReset = () => {
     setDept("Tất cả");
     setType("Tất cả");
     setQTitle("");
     setRefDay(todayStr());
+    setCat("Tất cả"); // reset thể loại
+
     setOnlyOngoing(true);
   };
 
@@ -220,7 +236,12 @@ export default function OngoingEvents() {
           alignItems={{ xs: "stretch", md: "center" }}
           spacing={2}
         >
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mr: 1 }}>
+            <Tooltip title="Back to Home">
+              <IconButton size="small" onClick={() => navigate("/admin")}>
+                <ArrowBackIosNew fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <FilterAlt />
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               Bộ lọc sự kiện
@@ -231,12 +252,12 @@ export default function OngoingEvents() {
           <TextField
             select
             size="small"
-            label="Phòng ban"
-            value={dept}
-            onChange={(e) => setDept(e.target.value)}
+            label="Thể loại"
+            value={cat}
+            onChange={(e) => setCat(e.target.value)}
             sx={{ minWidth: 180 }}
           >
-            {deptOptions.map((opt) => (
+            {categoryOptions.map((opt) => (
               <MenuItem key={opt} value={opt}>
                 {opt}
               </MenuItem>
@@ -313,7 +334,7 @@ export default function OngoingEvents() {
               .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
               .map((ev) => {
                 const timeLabel = fmtTimeRange(ev.startDate, ev.endDate);
-                const deptLabel = ev.department || ev.category || "Khác";
+                const deptLabel = ev.category || "Khác";
                 const typeLabel = ev.type || "Sự kiện";
                 const status = (ev.status || "").toUpperCase();
                 const capacity =
@@ -325,10 +346,7 @@ export default function OngoingEvents() {
                 const progress =
                   capacity > 0 ? Math.round((registered / capacity) * 100) : 0;
                 const key =
-                  ev.eventId ??
-                  ev.id ??
-                  ev.uuid ??
-                  `${ev.title}-${ev.startDate}`;
+                  ev.eventId ?? ev.id ?? ev.uuid ?? `${ev.title}-${ev.date}`;
 
                 return (
                   <Box
@@ -349,25 +367,6 @@ export default function OngoingEvents() {
                       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                         {ev.title || "—"}
                       </Typography>
-                      <Stack direction="row" spacing={1}>
-                        <Chip size="small" label={deptLabel} />
-                        <Chip
-                          size="small"
-                          label={typeLabel}
-                          color="primary"
-                          variant="outlined"
-                        />
-                        {!!status && (
-                          <Chip
-                            size="small"
-                            label={status}
-                            color={
-                              status === "PUBLISHED" ? "success" : "warning"
-                            }
-                            variant="outlined"
-                          />
-                        )}
-                      </Stack>
                     </Stack>
 
                     <Stack
@@ -386,13 +385,32 @@ export default function OngoingEvents() {
                           <Typography variant="body2">{ev.venue}</Typography>
                         </Stack>
                       )}
-                      {ev.startDate && (
+                      {ev.date && (
                         <Stack direction="row" spacing={1} alignItems="center">
                           <CalendarMonthRounded fontSize="small" />
                           <Typography variant="body2">
-                            {String(ev.startDate).slice(0, 10)}
+                            {String(ev.date).slice(0, 10)}
                           </Typography>
                         </Stack>
+                      )}
+                    </Stack>
+                    <Stack direction="row" spacing={1}>
+                      {ev.category && (
+                        <Chip
+                          size="small"
+                          label={ev.category}
+                          color="secondary"
+                          variant="outlined"
+                        />
+                      )}
+
+                      {!!status && (
+                        <Chip
+                          size="small"
+                          label={status}
+                          color={status === "PUBLISHED" ? "success" : "warning"}
+                          variant="outlined"
+                        />
                       )}
                     </Stack>
 
