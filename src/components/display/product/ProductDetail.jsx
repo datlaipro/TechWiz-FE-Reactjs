@@ -104,7 +104,7 @@ function getEventEnd(ev) {
   }
   return start;
 }
-function isEventOver(ev, now = new Date()) {
+function isEventOver(ev, now = new Date()) {// lọc sự kiện mà hết ngày đăng kí 
   const end = getEventEnd(ev);
   if (!end) return false;
   return now.getTime() > end.getTime();
@@ -173,46 +173,7 @@ const ProductDetail = () => {
     severity: "success",
     message: "",
   });
-  // function getNormToken(raw) {
-  //   if (!raw) return null;
-  //   let t = String(raw);
 
-  //   // loại bỏ BOM/zero-width if any
-  //   t = t.replace(/[\u200B-\u200D\uFEFF]/g, "");
-
-  //   // bỏ tiền tố "Bearer "
-  //   t = t.replace(/^Bearer\s+/i, "");
-
-  //   // trim khoảng trắng 2 đầu
-  //   t = t.trim();
-
-  //   // gỡ lặp các cặp nháy hoặc backtick nếu bị bọc nhiều lớp
-  //   while (
-  //     (t.startsWith("'") && t.endsWith("'")) ||
-  //     (t.startsWith('"') && t.endsWith('"')) ||
-  //     (t.startsWith("`") && t.endsWith("`"))
-  //   ) {
-  //     t = t.slice(1, -1).trim();
-  //   }
-
-  //   return t;
-  // }
-
-  // function isJwtExpired(token) {
-  //   try {
-  //     const payload = JSON.parse(
-  //       decodeURIComponent(
-  //         atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
-  //           .split("")
-  //           .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-  //           .join("")
-  //       )
-  //     );
-  //     return (payload?.exp ?? 0) * 1000 < Date.now() - 10_000; // lệch 10s
-  //   } catch {
-  //     return true;
-  //   }
-  // }
 
   // derive numeric/string eventId for API & localStorage key
 const eventKey = useMemo(() => {

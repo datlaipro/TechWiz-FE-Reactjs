@@ -180,7 +180,7 @@ const GalleryBook = () => {
                   <Button
                     variant="contained"
                     component={Link}
-                    to={`/productdetail/${slide.id}`} // giữ route FE hiện có, truyền eventId
+                    to={`/eventdetail/${slide.id}`} // giữ route FE hiện có, truyền eventId
                     size="large"
                     sx={{
                       backgroundColor: "#F86D72",

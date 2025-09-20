@@ -24,7 +24,7 @@ const ShopPage = () => {
   return (
     <>
       <BreadcrumbsComponent
-        title="Shop"
+        title="Events"
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Events' },

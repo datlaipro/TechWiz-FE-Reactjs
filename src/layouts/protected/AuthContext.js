@@ -1,7 +1,6 @@
 // Context được sử dụng để quản lý trạng thái xác thực (authentication state)
 import React, { createContext, useState, useCallback } from "react";
 import { getRolesFromToken, getEmailFromToken, isTokenExpired } from "./jwtUtils";
-
 export const AuthContext = createContext();
 
 const STORAGE_KEY = "authState_v1";
@@ -26,6 +25,7 @@ function getSavedRoles(saved) {
 }
 
 export const AuthProvider = ({ children }) => {
+
   // ===== Khởi tạo từ localStorage (ưu tiên authState_v1, fallback jwtToken) =====
   const initFromStorage = () => {
     const saved = readSavedAuth();
@@ -112,6 +112,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("username");
     localStorage.removeItem("password");
     localStorage.removeItem("rememberMe");
+    
   }, []);
 
   const showError = useCallback((message, severity = "error") => {

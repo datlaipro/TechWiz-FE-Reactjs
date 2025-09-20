@@ -19,7 +19,7 @@ const ProductSection = () => {
     startDate: e?.startDate || e?.date || null,
     endDate: e?.endDate || null,
     // FE dùng link
-    link: `/productdetail/${e?.eventId ?? e?.id}`,
+    link: `/eventdetail/${e?.eventId ?? e?.id}`,
     // FE dùng location
     location: e?.venue || "",
     // Các field FE cũ (không cần từ BE) giữ nguyên nhưng để trống nếu không có

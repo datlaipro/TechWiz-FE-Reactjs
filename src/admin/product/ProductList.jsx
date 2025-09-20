@@ -434,25 +434,44 @@ function ProductList() {
               <TableCell>Bắt đầu</TableCell>
               <TableCell>Kết thúc</TableCell>
               <TableCell>Giờ</TableCell>
-              <TableCell>Địa điểm</TableCell>
-              <TableCell>Ảnh</TableCell>
+              {/* đổi 2 cột dưới đây */}
+              <TableCell align="right">Số lượng đăng ký</TableCell>
+              <TableCell align="right">Số lượng check-in</TableCell>
               <TableCell>Hành động</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
             {filteredEvents
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((ev) => {
                 const eventId = ev.eventId ?? ev.event_id ?? ev.id; // 👈 ưu tiên eventId
-                const imgUrl = ev.img || ev.imageUrl || ev.image || "";
+             
                 const date = ev.date || ev.Date || "";
                 const startDate = ev.start_date || ev.startDate || "";
                 const endDate = ev.end_date || ev.endDate || "";
                 const time = ev.time || ev.Time || "";
-                const venue = ev.venue || ev.Venue || "";
+                
                 const category = ev.category || "";
                 const title = ev.title || "";
                 const desc = ev.description || "";
+
+                // thêm 2 biến đếm, fallback nhiều tên field phổ biến
+                const registered =
+                  ev.registeredCount ??
+                  ev.registrationCount ??
+                  ev.registrations ??
+                  ev.totalRegistrations ??
+                  ev.register_count ??
+                  0;
+
+                const checkedIn =
+                  ev.checkinCount ??
+                  ev.checkedIn ??
+                  ev.checkins ??
+                  ev.attendedCount ??
+                  ev.check_in_count ??
+                  0;
 
                 return (
                   <TableRow
@@ -481,29 +500,9 @@ function ProductList() {
                     <TableCell>{fmtDate(startDate)}</TableCell>
                     <TableCell>{fmtDate(endDate)}</TableCell>
                     <TableCell>{fmtTime(time)}</TableCell>
-                    <TableCell>{venue}</TableCell>
-                    <TableCell>
-                      {imgUrl ? (
-                        <img
-                          src={imgUrl}
-                          alt="event"
-                          style={{
-                            width: 50,
-                            height: 50,
-                            objectFit: "cover",
-                            borderRadius: "8px",
-                            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Không có ảnh
-                        </Typography>
-                      )}
-                    </TableCell>
+                    <TableCell align="right">{registered}</TableCell>
+                    <TableCell align="right">{checkedIn}</TableCell>
+
                     <TableCell>
                       <IconButton
                         onClick={() => handleView(eventId)}
@@ -518,7 +517,7 @@ function ProductList() {
                       >
                         <VisibilityIcon />
                       </IconButton>
-                      <IconButton
+                      {/* <IconButton
                         onClick={() => handleEdit(eventId)}
                         sx={{
                           color: "warning.main",
@@ -530,8 +529,8 @@ function ProductList() {
                         }}
                       >
                         <EditIcon />
-                      </IconButton>
-                      <IconButton
+                      </IconButton> */}
+                      {/* <IconButton
                         onClick={() => handleDelete(eventId)}
                         sx={{
                           color: "error.main",
@@ -543,7 +542,7 @@ function ProductList() {
                         }}
                       >
                         <DeleteIcon />
-                      </IconButton>
+                      </IconButton> */}
                     </TableCell>
                   </TableRow>
                 );

@@ -310,7 +310,7 @@ function ProductView() {
             <Button
               fullWidth
               variant="contained"
-              onClick={() => navigate('/admin/product')}
+              onClick={() => navigate('/admin/events')}
               sx={{
                 borderRadius: 2,
                 textTransform: 'none',

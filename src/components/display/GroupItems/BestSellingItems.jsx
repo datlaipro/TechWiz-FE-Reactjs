@@ -22,7 +22,7 @@ const BestSellingItems = () => {
           startDate: p.startDate || p.dateAdded || p.createdAt || null,
           endDate: p.endDate || null,
           location: p.location || p.department || "",
-          link: `/productdetail/${p.eventId}`, // đổi theo route chi tiết thực tế nếu cần
+          link: `/eventdetail/${p.eventId}`, // đổi theo route chi tiết thực tế nếu cần
 
           // ---- giữ thêm các field cũ để tương thích (nếu slider fallback) ----
           name: p.name,

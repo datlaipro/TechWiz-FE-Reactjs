@@ -77,7 +77,7 @@ function AppContent() {
           <Route path="blog" element={<BlogPage />} />
           <Route path="contact" element={<ContactPage />} />
           {/* <Route path="singlepost" element={<SinglePost />} /> */}
-          <Route path="productdetail/:id" element={<ProductDetail />} />
+          <Route path="eventdetail/:id" element={<ProductDetail />} />
           {/* <Route path="cart" element={<Cart />} /> */}
           {/* Các route yêu cầu đăng nhập */}
           {/* <Route

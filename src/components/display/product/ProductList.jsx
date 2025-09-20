@@ -228,7 +228,7 @@ const ProductList = ({ filters: initialFilters }) => {
           endDate: x.endDate || null,
           venue: x.venue || "",
           totalSeats: x.totalSeats || 0,
-          link: `/productdetail/${x.eventId}`,
+          link: `/eventdetail/${x.eventId}`,
         }));
         setProducts(mapped);
         setLoading(false);

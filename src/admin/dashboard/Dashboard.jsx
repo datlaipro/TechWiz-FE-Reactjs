@@ -52,34 +52,7 @@ function Dashboard() {
 
   // === Auth helpers ===
   const STORAGE_KEY = "authState_v1";
-  // function readAuth() {
-  //   try {
-  //     const raw = localStorage.getItem(STORAGE_KEY);
-  //     if (!raw) return { token: null, role: null };
-  //     const obj = JSON.parse(raw);
-  //     const token = obj.accessToken || obj.token || obj.jwt || null;
-  //     let role =
-  //       obj.role || (Array.isArray(obj.roles) ? obj.roles[0] : null) || null;
 
-  //     if (!role && token && token.split(".").length === 3) {
-  //       try {
-  //         const payload = JSON.parse(
-  //           atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
-  //         );
-  //         role =
-  //           payload.role ||
-  //           (Array.isArray(payload.roles) ? payload.roles[0] : null) ||
-  //           (Array.isArray(payload.authorities)
-  //             ? payload.authorities[0]
-  //             : null) ||
-  //           null;
-  //       } catch {}
-  //     }
-  //     return { token, role };
-  //   } catch {
-  //     return { token: null, role: null };
-  //   }
-  // }
 
   useEffect(() => {
     const fetchAll = async () => {

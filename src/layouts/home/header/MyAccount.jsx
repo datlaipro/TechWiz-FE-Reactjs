@@ -31,6 +31,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import axios from "axios";
 import readAuth from "../../../admin/auth/getToken";
+import { useNavigate } from "react-router-dom";
 
 const STORAGE_KEY_NEW = "authState_v1";
 const STORAGE_KEY_OLD = "STORAGE_KEY";
@@ -148,16 +149,14 @@ const isUpcoming = (s) => new Date(s).getTime() >= Date.now();
 
 /* ================= Component ================= */
 export default function MyAccount() {
+  const navigate = useNavigate();
   const [{ isLoggedIn, user, accessToken }, setAuth] = useState(
     readAuthFromStorage()
   );
   // URL ảnh QR được tạo từ blob
-  const [qrUrl, setQrUrl] = useState("");
+ 
 
   // ===== QR tickets =====
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
 
   // ===== Registrations =====
   const [regs, setRegs] = useState([]); // danh sách đã đăng ký (enriched kèm info event)
@@ -232,160 +231,90 @@ export default function MyAccount() {
     setAuth(readAuthFromStorage());
   }, []);
 
-  // ====== FIX: gọi API phát QR đúng chuẩn axios.post(url, data, config)
-  const fetchTickets = async () => {
-    if (!accessToken) {
-      setErr("Chưa có accessToken.");
-      setLoading(false);
-      return;
-    }
-    if (!eventId || !studentId) {
-      setErr("Thiếu eventId hoặc studentId.");
-      setLoading(false);
-      return;
-    }
+  // ====== Registrations ======
+  // Cache QR theo eventId để tránh gọi lại nhiều lần
+  const qrCache = useRef(new Map());
+
+  async function fetchQrFor(eventId, studentId) {
+    if (!accessToken || !eventId || !studentId) return null;
+    if (qrCache.current.has(eventId)) return qrCache.current.get(eventId);
     try {
-      setLoading(true);
-      setErr("");
-
-      // payload đúng theo BE yêu cầu
-
-      // *** QUAN TRỌNG: data và config tách riêng ***
-      // const res = await axios.post(`${API_BASE}/api/qr/issue`, body, {
-      //   headers: buildHeaders(accessToken),
-      // });
-
       const res = await fetch(`${API_BASE}/api/qr/issue`, {
         method: "POST",
-        mode: "cors", // cho rõ ràng
         headers: {
-          Authorization: `Bearer ${accessToken}`, // <-- nằm trong headers
+          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
           Accept: "image/png",
         },
         body: JSON.stringify({ eventId, studentId, size: 240 }),
-        
-      }
-    );
-      
-      // const res = await fetch(`${API_BASE}/api/qr/issue`, {
-      //   method: "POST",
-      //   headers: {
-      //     Authorization: `Bearer ${accessToken}`,
-      //     "Content-Type": "application/json",
-      //     Accept: "image/png",
-      //   },
-      //   body: JSON.stringify({ eventId, studentId, size: 240 }),
-      // });
-      const url = URL.createObjectURL(res.data);
-      setQrUrl(url);
-
-      setTickets((prev = []) => {
-        const item = {
-          id: `${eventId}-${studentId}`,
-          eventId,
-          studentId,
-          eventTitle: `Vé sự kiện #${eventId}`,
-          eventDate: null, // nếu có ngày từ BE thì set vào
-          venue: "",
-          department: "",
-          status: "CONFIRMED", // hoặc trạng thái bạn muốn
-          qrImageUrl: url, // QUAN TRỌNG: dùng trong UI
-        };
-        const rest = Array.isArray(prev)
-          ? prev.filter((x) => x?.id !== item.id)
-          : [];
-        return [item, ...rest];
       });
-    } catch (e) {
-      const msg =
-        e?.response?.data?.message ||
-        `HTTP ${e?.response?.status || ""}`.trim() ||
-        e?.message ||
-        "Lỗi tải vé/QR.";
-      setErr(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      qrCache.current.set(eventId, url);
 
-  // ====== Registrations ======
-  const eventCache = useRef(new Map()); // cache event detail theo id
-
-  const fetchEventDetail = async (id) => {
-    if (!id) return null;
-    if (eventCache.current.has(id)) return eventCache.current.get(id);
-    try {
-      const res = await axios.get(`${API_BASE}/api/events/${id}`, {
-        headers: buildHeaders(accessToken),
-      });
-      const data = res?.data || null;
-      eventCache.current.set(id, data);
-      return data;
-    } catch {
-      eventCache.current.set(id, null);
+      // gắn vào mảng regs để render ngay
+      setRegs((prev) =>
+        prev.map((it) =>
+          it.eventId === eventId ? { ...it, qrImageUrl: url } : it
+        )
+      );
+      return url;
+    } catch (_) {
       return null;
     }
-  };
-
-  const tryGet = async (url) => {
-    try {
-      const r = await axios.get(url, { headers: buildHeaders(accessToken) });
-      if (Array.isArray(r.data)) return r.data;
-      if (r?.data?.content && Array.isArray(r.data.content))
-        return r.data.content;
-      return [];
-    } catch {
-      return null;
-    }
-  };
+  }
 
   const fetchRegistrations = async () => {
-    if (!accessToken || !studentId) {
+    if (!accessToken) {
+      setRegs([]);
       setRegsLoading(false);
       return;
     }
     setRegsLoading(true);
     setRegsErr("");
-    try {
-      const endpoints = [
-        `${API_BASE}/api/registrations/student/${studentId}`,
-        `${API_BASE}/api/registrations/by-student/${studentId}`,
-        `${API_BASE}/api/registrations?studentId=${studentId}`,
-        `${API_BASE}/api/registrations`,
-      ];
-      let raw = null;
-      for (const ep of endpoints) {
-        raw = await tryGet(ep);
-        if (raw !== null) break;
-      }
-      if (!raw) raw = [];
 
-      // Enrich bằng thông tin event
-      const enriched = await Promise.all(
-        raw.map(async (r) => {
-          const ev = await fetchEventDetail(r.eventId);
-          return {
-            id: r.registrationId ?? r.id,
-            registrationId: r.registrationId ?? r.id,
-            eventId: r.eventId,
-            studentId: r.studentId,
-            status: r.status,
-            registeredOn: r.registeredOn,
-            // Thông tin event (nếu có)
-            eventTitle: ev?.title || `Sự kiện #${r.eventId}`,
-            eventDate: ev?.startDate || ev?.date || null,
-            venue: ev?.venue || "",
-            department: ev?.department || ev?.organizer || "",
-            link: ev?.id ? `/productdetail/${ev.eventId}` : undefined, // tuỳ route của bạn
-          };
-        })
-      );
-      setRegs(enriched);
+    try {
+      const uid = user?.id || userId; // nếu readAuth() của bạn trả giá trị này
+
+      // gọi API mới: Page<RegistrationEventItem>
+      const geturl = `${API_BASE}/api/registrations/users/${uid}/events?when=ALL&page=0&size=50`;
+      const r = await axios.get(geturl, { headers: buildHeaders(accessToken) });
+
+      // BE có thể trả Page hoặc mảng
+      const list = Array.isArray(r.data)
+        ? r.data
+        : Array.isArray(r?.data?.content)
+        ? r.data.content
+        : [];
+
+      // Map sang cấu trúc UI đang dùng (eventTitle, eventDate, venue, department…)
+      const mapped = list.map((it) => ({
+        // giữ field cũ để UI không phải đổi nhiều
+        id: it.eventId,
+        registrationId: undefined, // API mới không trả — bỏ hiển thị chip này
+        eventId: it.eventId,
+        studentId: uid,
+        status: undefined, // API mới không trả — không hiển thị status
+        registeredOn: undefined, // API mới không trả
+
+        eventTitle: it.title,
+        eventDate: it.startDate || it.date || null,
+        venue: it.venue || "",
+        department: it.category || "",
+        link: `/eventdetail/${it.eventId}`, // tuỳ router của bạn
+        mainImageUrl: it.mainImageUrl || null,
+        totalSeats: it.totalSeats ?? null,
+      }));
+
+      setRegs(mapped);
     } catch (e) {
       setRegsErr(
-        e?.response?.data?.message || e?.message || "Lỗi tải đăng ký."
+        e?.response?.data?.message ||
+          e?.message ||
+          "Lỗi tải sự kiện đã đăng ký."
       );
+      setRegs([]);
     } finally {
       setRegsLoading(false);
     }
@@ -393,49 +322,15 @@ export default function MyAccount() {
 
   useEffect(() => {
     if (accessToken && !isTokenExpired(accessToken)) {
-      fetchTickets();
       fetchRegistrations();
     } else {
-      setLoading(false);
       setRegsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, studentId]);
 
-  const statusChip = (s) => {
-    const key = String(s || "").toUpperCase();
-    const map = {
-      CONFIRMED: { label: "Đã xác nhận", color: "success" },
-      PENDING: { label: "Chờ duyệt", color: "warning" },
-      PENDING_APPROVAL: { label: "Chờ duyệt", color: "warning" },
-      CANCELED: { label: "Đã hủy", color: "default" },
-      REJECTED: { label: "Từ chối", color: "error" },
-      // lowercase support
-      CONFIRMED_L: { label: "Đã xác nhận", color: "success" },
-      PENDING_L: { label: "Chờ duyệt", color: "warning" },
-      CANCELED_L: { label: "Đã hủy", color: "default" },
-    };
-    const m = map[key] ||
-      map[`${key}_L`] || { label: s || "Trạng thái", color: "default" };
-    return <Chip size="small" color={m.color} label={m.label} />;
-  };
 
-  const filteredTickets = useMemo(() => {
-    let arr = [...tickets];
-    if (filter === "upcoming") arr = arr.filter((t) => isUpcoming(t.eventDate));
-    if (filter === "past") arr = arr.filter((t) => !isUpcoming(t.eventDate));
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      arr = arr.filter(
-        (t) =>
-          t.eventTitle?.toLowerCase().includes(q) ||
-          t.department?.toLowerCase().includes(q) ||
-          t.venue?.toLowerCase().includes(q)
-      );
-    }
-    arr.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
-    return arr;
-  }, [tickets, filter, search]);
+
 
   const filteredRegs = useMemo(() => {
     let arr = [...regs];
@@ -463,29 +358,9 @@ export default function MyAccount() {
     return arr;
   }, [regs, filter, search]);
 
-  const openFullQR = (item) =>
-    setQrDialog({
-      open: true,
-      img: item.qrImageUrl || "",
-      title: item.eventTitle || "QR Code",
-    });
 
-  const downloadQR = (item) => {
-    if (item.qrImageUrl) {
-      const a = document.createElement("a");
-      a.href = item.qrImageUrl;
-      a.download = `${item.eventTitle || "event"}-qr.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } else if (item.qrData) {
-      setSnack({
-        open: true,
-        sev: "info",
-        msg: "BE chưa trả ảnh QR. Hãy trả sẵn qrImageUrl hoặc base64 để tải.",
-      });
-    }
-  };
+
+
 
   return (
     <Container sx={{ py: 4 }}>
@@ -518,7 +393,6 @@ export default function MyAccount() {
           {accessToken && (
             <IconButton
               onClick={() => {
-                fetchTickets();
                 fetchRegistrations();
               }}
               title="Làm mới"
@@ -579,7 +453,18 @@ export default function MyAccount() {
 
           {/* Vé & QR */}
           <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 2.5, borderRadius: 3, mb: 3 }}>
+         
+
+            {/* ======== SỰ KIỆN ĐÃ ĐĂNG KÝ ======== */}
+            <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+              <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+                <InfoOutlinedIcon />
+                <Typography variant="h6" fontWeight={700}>
+                  Sự kiện đã đăng ký
+                </Typography>
+              </Stack>
+
+              {/* Bộ lọc dời xuống đây để giữ nguyên trải nghiệm */}
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={1.5}
@@ -616,168 +501,6 @@ export default function MyAccount() {
               </Stack>
 
               <Stack spacing={2}>
-                {loading &&
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <Paper
-                      key={`t-skel-${i}`}
-                      variant="outlined"
-                      sx={{ p: 2, borderRadius: 2 }}
-                    >
-                      <Skeleton variant="text" width="40%" />
-                      <Skeleton variant="text" width="60%" />
-                      <Skeleton variant="rounded" height={100} />
-                    </Paper>
-                  ))}
-
-                {!loading && filteredTickets.length === 0 && (
-                  <Box
-                    sx={{ p: 3, textAlign: "center", color: "text.secondary" }}
-                  >
-                    <QrCode2Icon />
-                    <Typography mt={1}>
-                      Chưa có vé/QR nào phù hợp bộ lọc.
-                    </Typography>
-                  </Box>
-                )}
-
-                {!loading &&
-                  filteredTickets.map((item) => (
-                    <Paper
-                      key={`t-${item.id}`}
-                      variant="outlined"
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        display: "grid",
-                        gridTemplateColumns: {
-                          xs: "1fr",
-                          sm: "140px 1fr auto",
-                        },
-                        gap: 16,
-                        alignItems: "center",
-                      }}
-                    >
-                      {/* QR */}
-                      <Box
-                        sx={{
-                          aspectRatio: "1 / 1",
-                          width: { xs: "100%", sm: 120 },
-                          borderRadius: 2,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          display: "grid",
-                          placeItems: "center",
-                          overflow: "hidden",
-                          bgcolor: "#fafafa",
-                        }}
-                      >
-                        {item.qrImageUrl ? (
-                          <img
-                            src={item.qrImageUrl}
-                            alt="QR"
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
-                          <Stack alignItems="center" spacing={1} sx={{ p: 1 }}>
-                            <QrCode2Icon />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              textAlign="center"
-                            >
-                              BE chưa trả ảnh QR
-                            </Typography>
-                          </Stack>
-                        )}
-                      </Box>
-
-                      {/* Info */}
-                      <Box>
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          alignItems="center"
-                          mb={0.5}
-                        >
-                          <Typography variant="h6" fontWeight={700}>
-                            {item.eventTitle}
-                          </Typography>
-                          {statusChip(item.status)}
-                        </Stack>
-                        <Stack
-                          direction="row"
-                          spacing={2}
-                          flexWrap="wrap"
-                          useFlexGap
-                        >
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            alignItems="center"
-                          >
-                            <CalendarMonthRoundedIcon fontSize="small" />
-                            <Typography variant="body2">
-                              {fmt(item.eventDate)}
-                            </Typography>
-                          </Stack>
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            alignItems="center"
-                          >
-                            <PlaceRoundedIcon fontSize="small" />
-                            <Typography variant="body2">
-                              {item.venue || "Cập nhật sau"}
-                            </Typography>
-                          </Stack>
-                          {!!item.department && (
-                            <Chip
-                              size="small"
-                              variant="outlined"
-                              label={item.department}
-                            />
-                          )}
-                        </Stack>
-                      </Box>
-
-                      {/* Actions */}
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        justifyContent="flex-end"
-                      >
-                        <IconButton
-                          onClick={() => openFullQR(item)}
-                          title="Xem lớn"
-                        >
-                          <OpenInFullIcon />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => downloadQR(item)}
-                          title="Tải về"
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      </Stack>
-                    </Paper>
-                  ))}
-              </Stack>
-            </Paper>
-
-            {/* ======== SỰ KIỆN ĐÃ ĐĂNG KÝ ======== */}
-            <Paper sx={{ p: 2.5, borderRadius: 3 }}>
-              <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                <InfoOutlinedIcon />
-                <Typography variant="h6" fontWeight={700}>
-                  Sự kiện đã đăng ký
-                </Typography>
-              </Stack>
-
-              <Stack spacing={2}>
                 {regsLoading &&
                   Array.from({ length: 3 }).map((_, i) => (
                     <Paper
@@ -796,12 +519,8 @@ export default function MyAccount() {
                   >
                     <Typography>Chưa có sự kiện nào bạn đã đăng ký.</Typography>
                     <Typography variant="body2">
-                      Khi đăng ký thành công, mục này sẽ hiển thị dạng:
-                      <code style={{ marginLeft: 6 }}>
-                        {
-                          "{ registrationId, eventId, studentId, status, registeredOn }"
-                        }
-                      </code>
+                      Sau khi đăng ký thành công, mục này sẽ hiển thị danh sách
+                      sự kiện từ hệ thống.
                     </Typography>
                   </Box>
                 )}
@@ -809,23 +528,23 @@ export default function MyAccount() {
                 {!regsLoading &&
                   filteredRegs.map((item) => (
                     <Paper
-                      key={`r-${item.registrationId}`}
+                      key={`r-${item.id || item.eventId}`}
                       variant="outlined"
                       sx={{
                         p: 2,
                         borderRadius: 2,
                         display: "grid",
-                        gridTemplateColumns: { xs: "1fr", sm: "1fr auto" },
+                        gridTemplateColumns: { xs: "1fr", sm: "1fr 180px" }, // cột phải chứa QR + nút
                         gap: 12,
                         alignItems: "center",
                       }}
                     >
+                      {/* LEFT: Info */}
                       <Box>
                         <Stack direction="row" spacing={1} alignItems="center">
                           <Typography variant="h6" fontWeight={700}>
                             {item.eventTitle}
                           </Typography>
-                          {statusChip(item.status)}
                         </Stack>
 
                         <Stack
@@ -864,34 +583,96 @@ export default function MyAccount() {
                           <Chip
                             size="small"
                             variant="outlined"
-                            label={`Mã đăng ký: ${item.registrationId}`}
+                            label={`Mã sự kiện: ${item.eventId}`}
                           />
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={`Đăng ký lúc: ${fmt(item.registeredOn)}`}
-                          />
+                          {item.totalSeats != null && (
+                            <Chip
+                              size="small"
+                              variant="outlined"
+                              label={`Số ghế: ${item.totalSeats}`}
+                            />
+                          )}
                         </Stack>
                       </Box>
 
+                      {/* RIGHT: QR + Actions */}
                       <Stack
-                        direction="row"
                         spacing={1}
-                        justifyContent="flex-end"
+                        alignItems="center"
+                        justifyContent="center"
                       >
-                        {item.link ? (
+                        <Box
+                          sx={{
+                            width: 140,
+                            aspectRatio: "1 / 1",
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: "divider",
+                            display: "grid",
+                            placeItems: "center",
+                            overflow: "hidden",
+                            bgcolor: "#fafafa",
+                          }}
+                        >
+                          {item.qrImageUrl ? (
+                            <img
+                              src={item.qrImageUrl}
+                              alt="QR"
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
+                              onClick={() =>
+                                setQrDialog({
+                                  open: true,
+                                  img: item.qrImageUrl,
+                                  title: item.eventTitle || "QR Code",
+                                })
+                              }
+                            />
+                          ) : (
+                            <Button
+                              size="small"
+                              onClick={() =>
+                                fetchQrFor(item.eventId, item.studentId)
+                              }
+                            >
+                              Hiển thị QR
+                            </Button>
+                          )}
+                        </Box>
+
+                        <Stack direction="row" spacing={1}>
                           <Button
                             size="small"
                             variant="outlined"
-                            onClick={() => (window.location.href = item.link)}
+                            onClick={() =>
+                              navigate(item.link || `/events/${item.eventId}`)
+                            }
                           >
                             Xem chi tiết
                           </Button>
-                        ) : (
-                          <Button size="small" variant="outlined" disabled>
-                            Xem chi tiết
-                          </Button>
-                        )}
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              if (item.qrImageUrl) {
+                                const a = document.createElement("a");
+                                a.href = item.qrImageUrl;
+                                a.download = `${
+                                  item.eventTitle || "event"
+                                }-qr.png`;
+                                document.body.appendChild(a);
+                                a.click();
+                                a.remove();
+                              }
+                            }}
+                            title="Tải QR"
+                            disabled={!item.qrImageUrl}
+                          >
+                            <DownloadIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
                       </Stack>
                     </Paper>
                   ))}
@@ -960,11 +741,7 @@ export default function MyAccount() {
         </Alert>
       </Snackbar>
 
-      {err && (
-        <Box sx={{ mt: 2 }}>
-          <Alert severity="error">{err}</Alert>
-        </Box>
-      )}
+
     </Container>
   );
 }

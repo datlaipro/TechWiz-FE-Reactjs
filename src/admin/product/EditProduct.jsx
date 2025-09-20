@@ -626,7 +626,7 @@ function EditProduct() {
             </Button>
             <Button
               variant="outlined"
-              onClick={() => navigate("/admin/product")}
+              onClick={() => navigate("/admin")}
               sx={buttonOutlineSx}
             >
               Hủy

@@ -80,7 +80,7 @@ export default function AdminEventView() {
 
   const handleReject = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/organizer/events/${id}/`, {
+      const res = await fetch(`${API_BASE}/api/admin/events/${id}/reject`, {
         method: "POST",
         headers: authHeaders,
       });
