@@ -28,7 +28,7 @@ import readAuth from "../auth/getToken";
 // === BẬT/TẮT mock data ===
 const USE_MOCK = true;
 
-// === DỮ LIỆU GIẢ TẠM ===
+// === DỮ LIỆU GIẢ TẠM (giữ nguyên, FE có fallback khi thiếu counters) ===
 const MOCK_EVENTS = [
   {
     id: 101,
@@ -42,6 +42,9 @@ const MOCK_EVENTS = [
     time: "09:00:00",
     venue: "Hội trường A",
     department: "Khoa CNTT",
+    // counters (nếu mock muốn hiển thị)
+    registeredCount: 158,
+    checkinCount: 0,
   },
   {
     id: 102,
@@ -55,6 +58,8 @@ const MOCK_EVENTS = [
     time: "09:00:00",
     venue: "Sân trường",
     department: "Phòng CT HSSV",
+    registeredCount: 420,
+    checkinCount: 15,
   },
   {
     id: 103,
@@ -68,6 +73,8 @@ const MOCK_EVENTS = [
     time: "09:00:00",
     venue: "P.302 - Nhà E",
     department: "Khoa CNTT",
+    registeredCount: 97,
+    checkinCount: 0,
   },
   {
     id: 104,
@@ -81,6 +88,8 @@ const MOCK_EVENTS = [
     time: "09:00:00",
     venue: "Cổng chính",
     department: "Đoàn - Hội",
+    registeredCount: 210,
+    checkinCount: 30,
   },
   {
     id: 105,
@@ -94,6 +103,8 @@ const MOCK_EVENTS = [
     time: "09:00:00",
     venue: "Hội trường B",
     department: "Khoa CNTT",
+    registeredCount: 120,
+    checkinCount: 5,
   },
   {
     id: 106,
@@ -107,6 +118,8 @@ const MOCK_EVENTS = [
     time: "09:00:00",
     venue: "Online & Sảnh nhà A",
     department: "Marketing",
+    registeredCount: 300,
+    checkinCount: 0,
   },
 ];
 
@@ -123,7 +136,7 @@ function ProductList() {
   // Tìm kiếm theo tiêu đề
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Bộ lọc dashboard
+  // Bộ lọc dashboard (giữ nguyên state cũ, có department)
   const [filters, setFilters] = useState({
     department: "",
     category: "",
@@ -149,9 +162,11 @@ function ProductList() {
   const truncate = (txt, n = 80) =>
     !txt ? "" : txt.length <= n ? txt : txt.slice(0, n) + "…";
 
-  // Lấy dữ liệu: dùng MOCK nếu USE_MOCK = true, ngược lại fetch từ BE
+  // Lấy dữ liệu: đổi sang /api/events-with-stats (đã APPROVED + counters)
   useEffect(() => {
-    fetch("http://localhost:6868/api/events")
+    fetch("http://localhost:6868/api/admin/events-with-stats", {
+      headers: authHeaders,
+    })
       .then((res) => res.json())
       .then((data) => {
         const arr = Array.isArray(data) ? data : [];
@@ -159,10 +174,17 @@ function ProductList() {
         setFilteredEvents(arr);
       })
       .catch((err) => {
-        console.error("Error fetching events, fallback to mock:", err);
-        // fallback mock khi fetch lỗi
-        setEvents(MOCK_EVENTS);
-        setFilteredEvents(MOCK_EVENTS);
+        console.error(
+          "Error fetching /events-with-stats, fallback to mock:",
+          err
+        );
+        if (USE_MOCK) {
+          setEvents(MOCK_EVENTS);
+          setFilteredEvents(MOCK_EVENTS);
+        } else {
+          setEvents([]);
+          setFilteredEvents([]);
+        }
       });
   }, []);
 
@@ -185,7 +207,7 @@ function ProductList() {
     return Array.from(set);
   }, [events]);
 
-  // Áp dụng lọc + tìm kiếm
+  // Áp dụng lọc + tìm kiếm (GIỮ state cũ; nếu API không có department thì điều kiện đó tự bỏ qua)
   useEffect(() => {
     const filtered = events.filter((ev) => {
       const titleMatch = (ev.title || "")
@@ -193,15 +215,17 @@ function ProductList() {
         .includes(searchTerm.trim().toLowerCase());
       if (!titleMatch) return false;
 
+      // department chỉ áp dụng nếu bản ghi có department
       const evDept = ev.department || ev.dept || ev.faculty || "";
-      if (filters.department && evDept !== filters.department) return false;
+      if (filters.department && evDept && evDept !== filters.department)
+        return false;
 
       const evCat = ev.category || "";
       if (filters.category && evCat !== filters.category) return false;
 
       const startRaw =
-        ev.start_date || ev.startDate || ev.date || ev.Date || "";
-      const endRaw = ev.end_date || ev.endDate || ev.date || ev.Date || "";
+        ev.startDate || ev.start_date || ev.date || ev.Date || "";
+      const endRaw = ev.endDate || ev.end_date || ev.date || ev.Date || "";
       const evStart = startRaw ? new Date(startRaw) : null;
       const evEnd = endRaw ? new Date(endRaw) : evStart;
 
@@ -234,18 +258,14 @@ function ProductList() {
         headers: authHeaders,
       });
       // Khi dùng mock: chỉ xóa trên state
-      setEvents((prev) => prev.filter((ev) => (ev.id ?? ev.event_id) !== id));
+      setEvents((prev) =>
+        prev.filter((ev) => (ev.id ?? ev.event_id ?? ev.eventId) !== id)
+      );
     }
   };
   const handleView = (eventId) => navigate(`/admin/eventsview/${eventId}`);
   const handleEdit = (eventId) => navigate(`/admin/editevent/${eventId}`);
   const handleAdd = () => navigate("/admin/addevent");
-
-  const handleChangePage = (event, newPage) => setPage(newPage);
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
 
   const inputSx = {
     "& .MuiOutlinedInput-root": {
@@ -320,6 +340,8 @@ function ProductList() {
             <FilterAltOutlinedIcon />
             <Typography sx={{ fontWeight: 600 }}>Bộ lọc sự kiện</Typography>
           </Box>
+
+          {/* Giữ nguyên select Phòng ban, nhưng có thể không có options nếu API không trả */}
           <FormControl sx={{ minWidth: 180 }} size="small">
             <InputLabel>Phòng ban</InputLabel>
             <Select
@@ -336,6 +358,7 @@ function ProductList() {
               ))}
             </Select>
           </FormControl>
+
           <FormControl sx={{ minWidth: 180 }} size="small">
             <InputLabel>Loại sự kiện</InputLabel>
             <Select
@@ -352,6 +375,7 @@ function ProductList() {
               ))}
             </Select>
           </FormControl>
+
           <TextField
             size="small"
             label="Từ ngày"
@@ -370,6 +394,7 @@ function ProductList() {
             InputLabelProps={{ shrink: true }}
             sx={{ minWidth: 180, ...inputSx }}
           />
+
           <Button variant="outlined" onClick={clearFilters} sx={{ ml: "auto" }}>
             XÓA LỌC
           </Button>
@@ -427,17 +452,19 @@ function ProductList() {
               }}
             >
               <TableCell>ID</TableCell>
-              <TableCell>Tiêu đề</TableCell>
+              <TableCell sx={{ minWidth: 240, width: "30%" }}>
+                Tiêu đề
+              </TableCell>
               <TableCell>Thể loại</TableCell>
-              <TableCell>Mô tả</TableCell>
               <TableCell>Ngày</TableCell>
-              <TableCell>Bắt đầu</TableCell>
-              <TableCell>Kết thúc</TableCell>
               <TableCell>Giờ</TableCell>
-              {/* đổi 2 cột dưới đây */}
-              <TableCell align="right">Số lượng đăng ký</TableCell>
-              <TableCell align="right">Số lượng check-in</TableCell>
-              <TableCell>Hành động</TableCell>
+              <TableCell align="right" sx={{ width: 160 }}>
+                Đăng ký / Chỗ
+              </TableCell>
+              <TableCell align="right" sx={{ width: 160 }}>
+                Check-in / Đăng ký
+              </TableCell>
+              <TableCell sx={{ width: 140 }}>Hành động</TableCell>
             </TableRow>
           </TableHead>
 
@@ -445,18 +472,16 @@ function ProductList() {
             {filteredEvents
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((ev) => {
-                const eventId = ev.eventId ?? ev.event_id ?? ev.id; // 👈 ưu tiên eventId
-             
+                const eventId = ev.eventId ?? ev.event_id ?? ev.id;
+
                 const date = ev.date || ev.Date || "";
-                const startDate = ev.start_date || ev.startDate || "";
-                const endDate = ev.end_date || ev.endDate || "";
+
                 const time = ev.time || ev.Time || "";
-                
+
                 const category = ev.category || "";
                 const title = ev.title || "";
-                const desc = ev.description || "";
 
-                // thêm 2 biến đếm, fallback nhiều tên field phổ biến
+                // counters từ API mới; có fallback cho mock/cũ
                 const registered =
                   ev.registeredCount ??
                   ev.registrationCount ??
@@ -472,7 +497,11 @@ function ProductList() {
                   ev.attendedCount ??
                   ev.check_in_count ??
                   0;
-
+                const totalSeat =
+                  ev.totalSeat ?? // từ API mới
+                  ev.total_seat ?? // phòng khi API trả snake_case
+                  ev.capacity ?? // fallback từ view v_event_counters
+                  null;
                 return (
                   <TableRow
                     key={eventId}
@@ -489,19 +518,29 @@ function ProductList() {
                     }}
                   >
                     <TableCell>{eventId}</TableCell>
-                    <TableCell sx={{ fontWeight: "medium" }}>{title}</TableCell>
-                    <TableCell>{category}</TableCell>
-                    <TableCell sx={{ maxWidth: 260 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {truncate(desc, 90)}
-                      </Typography>
+
+                    <TableCell
+                      sx={{
+                        fontWeight: "medium",
+                        maxWidth: 420,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {title}
                     </TableCell>
+
+                    <TableCell>{category}</TableCell>
                     <TableCell>{fmtDate(date)}</TableCell>
-                    <TableCell>{fmtDate(startDate)}</TableCell>
-                    <TableCell>{fmtDate(endDate)}</TableCell>
                     <TableCell>{fmtTime(time)}</TableCell>
-                    <TableCell align="right">{registered}</TableCell>
-                    <TableCell align="right">{checkedIn}</TableCell>
+
+                    <TableCell align="right">
+                      {`${registered}/${totalSeat ?? 0}`}
+                    </TableCell>
+                    <TableCell align="right">
+                      {`${checkedIn}/${registered}`}
+                    </TableCell>
 
                     <TableCell>
                       <IconButton
@@ -517,32 +556,27 @@ function ProductList() {
                       >
                         <VisibilityIcon />
                       </IconButton>
+                      {/* Bật 2 nút dưới nếu cần sửa/xoá */}
                       {/* <IconButton
-                        onClick={() => handleEdit(eventId)}
-                        sx={{
-                          color: "warning.main",
-                          "&:hover": {
-                            bgcolor: "warning.light",
-                            transform: "scale(1.1)",
-                          },
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        <EditIcon />
-                      </IconButton> */}
-                      {/* <IconButton
-                        onClick={() => handleDelete(eventId)}
-                        sx={{
-                          color: "error.main",
-                          "&:hover": {
-                            bgcolor: "error.light",
-                            transform: "scale(1.1)",
-                          },
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton> */}
+    onClick={() => handleEdit(eventId)}
+    sx={{
+      color: "warning.main",
+      "&:hover": { bgcolor: "warning.light", transform: "scale(1.1)" },
+      transition: "all 0.2s",
+    }}
+  >
+    <EditIcon />
+  </IconButton>
+  <IconButton
+    onClick={() => handleDelete(eventId)}
+    sx={{
+      color: "error.main",
+      "&:hover": { bgcolor: "error.light", transform: "scale(1.1)" },
+      transition: "all 0.2s",
+    }}
+  >
+    <DeleteIcon />
+  </IconButton> */}
                     </TableCell>
                   </TableRow>
                 );

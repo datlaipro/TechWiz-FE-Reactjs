@@ -58,7 +58,6 @@ function fmtRange(startDate, endDate) {
     return "";
   }
 }
-const isEvent = (item) => !!item?.startDate;
 
 function yyyymmdd(d) {
   const pad = (n) => (n < 10 ? "0" + n : "" + n);
@@ -197,15 +196,12 @@ const ProductList = ({ filters: initialFilters }) => {
   const [error, setError] = useState("");
 
   // State lọc
-  const [filters, setFilters] = useState(
-    initialFilters || {
-      searchQuery: "",
-      dateFrom: "",
-      dateTo: "",
-      sort: "",
-      category: "",
-    }
-  );
+const [filters, setFilters] = useState({
+  category: "",
+  dateFrom: "",
+  dateTo: "",
+});
+
   useEffect(() => {
     if (initialFilters) setFilters((f) => ({ ...f, ...initialFilters }));
   }, [initialFilters]);

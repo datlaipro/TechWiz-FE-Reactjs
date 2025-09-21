@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import QrFromCamera from "../checkEvent/QrFromCamera";
-import QrFromScreen from "../checkEvent/QrFromCamera";
+import QrFromImage from "../checkEvent/QrFromScreen";
 
 export default function QrKit() {
   const [lastResult, setLastResult] = useState("");
@@ -10,7 +10,7 @@ export default function QrKit() {
       <h2>QR Tools (Camera + Screen)</h2>
 
       <QrFromCamera onResult={(text) => setLastResult(text)} />
-      <QrFromScreen onResult={(text) => setLastResult(text)} />
+      <QrFromImage onResult={(text) => setLastResult(text)} />
 
       <div style={{ marginTop: 8 }}>
         <h4>Kết quả gần nhất:</h4>

@@ -73,6 +73,9 @@ export default function AdminEventView() {
       if (!res.ok) throw new Error(`Approve failed: ${res.status}`);
       setEvent((prev) => ({ ...prev, status: "APPROVED" }));
       setMsg({ open: true, text: "Đã duyệt sự kiện", type: "success" });
+      setTimeout(() => {
+        navigate("/admin");
+      }, 2000);
     } catch (e) {
       setMsg({ open: true, text: "Duyệt thất bại", type: "error" });
     }
@@ -87,6 +90,9 @@ export default function AdminEventView() {
       if (!res.ok) throw new Error(`Reject failed: ${res.status}`);
       setEvent((prev) => ({ ...prev, status: "REJECTED" }));
       setMsg({ open: true, text: "Đã từ chối sự kiện", type: "success" });
+      setTimeout(() => {
+        navigate("/admin");
+      }, 2000);
     } catch (e) {
       setMsg({ open: true, text: "Từ chối thất bại", type: "error" });
     }
